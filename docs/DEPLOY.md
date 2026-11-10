@@ -8,7 +8,13 @@ Los tres tienen plan gratuito; verifica sus condiciones vigentes antes de empeza
 1. Crea un proyecto en [neon.tech](https://neon.tech) (región cercana a la de Render, p. ej. `us-west-2` si Render está en Oregon).
 2. Copia la cadena de conexión (`postgresql://…?sslmode=require`). Es el `DATABASE_URL`.
 
-Las tablas se crean solas: la API ejecuta `prisma migrate deploy` cada vez que arranca.
+Las tablas se crean solas: la API ejecuta `prisma migrate deploy` cada vez que arranca y crea el proyecto demo si todavía no existe (`db:seed -- --if-missing`).
+
+Para **restablecer el demo** (por ejemplo, si un visitante borró sus ítems), ejecuta en tu máquina, con la cadena de Neon:
+
+```bash
+DATABASE_URL="postgresql://…neon.tech/neondb?sslmode=require" npm run db:seed -w @bim/server
+```
 
 ## 2. API en Render
 
