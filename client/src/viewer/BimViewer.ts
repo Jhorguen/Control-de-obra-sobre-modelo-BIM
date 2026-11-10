@@ -120,10 +120,38 @@ export class BimViewer {
     const model = this.model;
     if (!model) return;
     const { controls } = this.world.camera;
-    // Three-quarter view from above reads better than a flat elevation.
+    // Three-quarter view from above reads better than a flat elevation. fitToSphere keeps
+    // that angle (fitToBox would snap the camera back to the closest axis).
     await controls.rotateTo(Math.PI / 4, Math.PI / 3, false);
-    await controls.fitToBox(model.box, true);
+    await controls.fitToSphere(model.box.getBoundingSphere(new THREE.Sphere()), true);
     await this.fragments.core.update(true);
+  }
+
+  /** GlobalIds of the given viewer items (local ids): the link with the database records. */
+  async getGuids(localIds: number[]): Promise<string[]> {
+    const model = this.model;
+    if (!model || localIds.length === 0) return [];
+    const guids = await model.getGuidsByLocalIds(localIds);
+    return guids.filter((guid): guid is string => guid !== null);
+  }
+
+  /** Selects (and optionally frames) the elements with these GlobalIds, e.g. from a table row. */
+  async selectByGuids(guids: string[], zoom = true): Promise<void> {
+    const model = this.model;
+    if (!model) return;
+    if (guids.length === 0) {
+      await this.highlighter.clear(this.highlighter.config.selectName);
+      return;
+    }
+    const localIds = (await model.getLocalIdsByGuids(guids)).filter(
+      (id): id is number => id !== null,
+    );
+    await this.highlighter.highlightByID(
+      this.highlighter.config.selectName,
+      { [MODEL_ID]: new Set(localIds) },
+      true,
+      zoom,
+    );
   }
 
   /** Raw item data for one element: attributes plus related property sets and container. */
@@ -134,7 +162,6 @@ export class BimViewer {
       attributesDefault: true,
       relations: {
         IsDefinedBy: { attributes: true, relations: true },
-        IsTypedBy: { attributes: true, relations: false },
         ContainedInStructure: { attributes: true, relations: false },
       },
     });

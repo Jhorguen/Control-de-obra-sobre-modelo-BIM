@@ -1,32 +1,36 @@
-import { MAX_MODEL_FILE_BYTES, type Project } from '@bim/shared';
+import { MAX_MODEL_FILE_BYTES, type BulkElementsResult, type Project } from '@bim/shared';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { uploadElements } from '../api/elements';
 import { downloadModelFile, getProject, uploadModelFile } from '../api/projects';
-import { PropertiesPanel } from '../components/PropertiesPanel';
-import { errorMessage, useAsync } from '../hooks/useAsync';
-import { formatBytes, formatNumber } from '../format';
 import { Link } from '../components/Link';
+import { PropertiesPanel } from '../components/PropertiesPanel';
+import { formatBytes, formatNumber } from '../format';
+import { errorMessage, useAsync } from '../hooks/useAsync';
+import { useModelSelection } from '../hooks/useModelSelection';
 import type { BimViewer } from '../viewer/BimViewer';
-import { toElementProperties, type ElementProperties } from '../viewer/itemProperties';
+import { extractFromIfc } from '../viewer/extractInBrowser';
 import { useBimViewer } from '../viewer/useBimViewer';
+import { QuantitiesTab } from './project/QuantitiesTab';
 
 type ModelStatus =
   | { kind: 'empty' }
   | { kind: 'loading' }
   | { kind: 'converting'; progress: number }
+  | { kind: 'extracting' }
   | { kind: 'uploading' }
   | { kind: 'ready' }
   | { kind: 'error'; message: string };
 
 /** Loads the stored Fragments model into the viewer whenever the project or viewer changes. */
-function useStoredModel(viewer: BimViewer | null, project: Project | null) {
+function useStoredModel(viewer: BimViewer | null, project: Project) {
   const [status, setStatus] = useState<ModelStatus>({ kind: 'loading' });
-  const fragUploadedAt = project?.files.frag?.uploadedAt ?? null;
-  const projectId = project?.id ?? null;
+  const fragUploadedAt = project.files.frag?.uploadedAt ?? null;
+  const projectId = project.id;
   // Which model version the current viewer already shows (e.g. right after an upload).
   const shown = useRef<{ viewer: BimViewer; version: string } | null>(null);
 
   useEffect(() => {
-    if (!viewer || projectId === null) return;
+    if (!viewer) return;
     if (shown.current?.viewer === viewer && shown.current.version === fragUploadedAt) return;
     const controller = new AbortController();
     const load = async () => {
@@ -56,33 +60,14 @@ function useStoredModel(viewer: BimViewer | null, project: Project | null) {
   return { status, setStatus, markShown };
 }
 
-function useSelection(viewer: BimViewer | null) {
-  const [selected, setSelected] = useState<number[]>([]);
-  const [properties, setProperties] = useState<ElementProperties | null>(null);
-  const [loading, setLoading] = useState(false);
-  const requestId = useRef(0);
-
-  useEffect(() => {
-    if (!viewer) return;
-    viewer.onSelectionChange(async (localIds) => {
-      const current = ++requestId.current;
-      setSelected(localIds);
-      const first = localIds[0];
-      if (first === undefined) {
-        setProperties(null);
-        return;
-      }
-      setLoading(true);
-      const data = await viewer.getItemData(first);
-      // Ignore the answer if the user already clicked something else.
-      if (current !== requestId.current) return;
-      setProperties(data ? toElementProperties(first, data) : null);
-      setLoading(false);
-    });
-    return () => viewer.onSelectionChange(null);
-  }, [viewer]);
-
-  return { selected, properties, loading };
+function importSummary(result: BulkElementsResult): string {
+  const parts = [
+    `${formatNumber(result.received)} elementos leídos del IFC`,
+    `${formatNumber(result.created)} nuevos`,
+    `${formatNumber(result.updated)} actualizados`,
+  ];
+  if (result.removed > 0) parts.push(`${formatNumber(result.removed)} marcados como eliminados`);
+  return parts.join(' · ');
 }
 
 function ModelUpload({
@@ -100,7 +85,7 @@ function ModelUpload({
     if (file) onFile(file);
   };
   return (
-    <label className={`button-like ${disabled ? 'disabled' : ''}`}>
+    <label className={`button-like primary ${disabled ? 'disabled' : ''}`}>
       {label}
       <input type="file" accept=".ifc" onChange={handleChange} disabled={disabled} hidden />
     </label>
@@ -114,9 +99,11 @@ function ModelStatusOverlay({ status }: { status: ModelStatus }) {
     case 'converting':
       return (
         <div className="viewer-overlay">
-          Procesando IFC en el navegador… {formatNumber(Math.round(status.progress * 100))} %
+          Procesando el IFC en el navegador… {formatNumber(Math.round(status.progress * 100))} %
         </div>
       );
+    case 'extracting':
+      return <div className="viewer-overlay">Extrayendo elementos y cantidades…</div>;
     case 'uploading':
       return <div className="viewer-overlay">Guardando el modelo en el servidor…</div>;
     case 'empty':
@@ -132,6 +119,8 @@ function ModelStatusOverlay({ status }: { status: ModelStatus }) {
   }
 }
 
+type Tab = 'quantities';
+
 function ProjectView({
   project,
   onProjectChange,
@@ -141,9 +130,21 @@ function ProjectView({
 }) {
   const { viewer, containerRef } = useBimViewer();
   const { status, setStatus, markShown } = useStoredModel(viewer, project);
-  const { selected, properties, loading } = useSelection(viewer);
-  const busy =
-    status.kind === 'converting' || status.kind === 'uploading' || status.kind === 'loading';
+  const selection = useModelSelection(viewer);
+  const [tab, setTab] = useState<Tab>('quantities');
+  const [dataVersion, setDataVersion] = useState(0);
+  const [notice, setNotice] = useState<string | null>(null);
+  const busy = ['converting', 'extracting', 'uploading', 'loading'].includes(status.kind);
+
+  /** Extracts elements from the IFC and sends the full list to the API. */
+  async function syncElements(ifcBytes: Uint8Array) {
+    setStatus({ kind: 'extracting' });
+    const extraction = await extractFromIfc(ifcBytes);
+    setStatus({ kind: 'uploading' });
+    const result = await uploadElements(project.id, extraction.elements);
+    setNotice(importSummary(result));
+    setDataVersion((v) => v + 1);
+  }
 
   async function handleFile(file: File) {
     if (!viewer) return;
@@ -159,6 +160,7 @@ function ProjectView({
       return;
     }
     try {
+      setNotice(null);
       setStatus({ kind: 'converting', progress: 0 });
       const ifcBytes = new Uint8Array(await file.arrayBuffer());
       const fragments = await viewer.loadIfc(ifcBytes, (progress) =>
@@ -173,12 +175,27 @@ function ProjectView({
         file.name.replace(/\.ifc$/i, '.frag'),
       );
       markShown(updated.files.frag?.uploadedAt);
-      setStatus({ kind: 'ready' });
       onProjectChange(updated);
+      await syncElements(ifcBytes);
+      setStatus({ kind: 'ready' });
     } catch (error) {
       setStatus({ kind: 'error', message: errorMessage(error) });
     }
   }
+
+  /** Re-reads the stored IFC, e.g. for models uploaded before the extraction existed. */
+  async function reextract() {
+    try {
+      setNotice(null);
+      const ifcBytes = new Uint8Array(await downloadModelFile(project.id, 'ifc'));
+      await syncElements(ifcBytes);
+      setStatus({ kind: 'ready' });
+    } catch (error) {
+      setStatus({ kind: 'error', message: errorMessage(error) });
+    }
+  }
+
+  const selectInModel = (guids: string[]) => void viewer?.selectByGuids(guids, true);
 
   return (
     <div className="project-page">
@@ -214,6 +231,15 @@ function ProjectView({
         </div>
       </header>
 
+      {notice && (
+        <p className="notice" role="status">
+          {notice}
+          <button type="button" className="link-button" onClick={() => setNotice(null)}>
+            Cerrar
+          </button>
+        </p>
+      )}
+
       <div className="workspace">
         <div className="viewer-shell">
           <div ref={containerRef} className="viewer-canvas" />
@@ -222,12 +248,43 @@ function ProjectView({
         <aside className="side-panel card">
           <h3>Propiedades</h3>
           <PropertiesPanel
-            properties={properties}
-            selectedCount={selected.length}
-            loading={loading}
+            properties={selection.properties}
+            selectedCount={selection.guids.length}
+            loading={selection.loadingProperties}
           />
         </aside>
       </div>
+
+      <section className="card tabs-card">
+        <div className="tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'quantities'}
+            className={tab === 'quantities' ? 'active' : ''}
+            onClick={() => setTab('quantities')}
+          >
+            Cantidades
+          </button>
+          <div className="tabs-actions">
+            {project.files.ifc && !project.isDemo && (
+              <button type="button" onClick={() => void reextract()} disabled={busy}>
+                Volver a extraer cantidades
+              </button>
+            )}
+          </div>
+        </div>
+        <div role="tabpanel">
+          {tab === 'quantities' && (
+            <QuantitiesTab
+              projectId={project.id}
+              dataVersion={dataVersion}
+              selectedGuids={selection.guids}
+              onSelect={selectInModel}
+            />
+          )}
+        </div>
+      </section>
     </div>
   );
 }

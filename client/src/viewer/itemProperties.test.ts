@@ -13,6 +13,8 @@ const wall: ItemData = {
     { _category: { value: 'IFCBUILDINGSTOREY' }, Name: { value: 'Erdgeschoss' } },
   ],
   IsDefinedBy: [
+    // Fragments lists the type object (IfcRelDefinesByType) among the definitions.
+    { _category: { value: 'IFCWALLTYPE' }, Name: { value: 'Leichtbeton 102890359 300' } },
     {
       _category: { value: 'IFCPROPERTYSET' },
       Name: { value: 'Pset_WallCommon' },
@@ -44,7 +46,7 @@ describe('toElementProperties', () => {
       globalId: '25fsbPyk15VvuXI$yNKenK',
       ifcClass: 'IFCWALLSTANDARDCASE',
       name: 'Wand-Ext-ERDG-3',
-      typeName: 'Muro exterior',
+      typeName: 'Leichtbeton 102890359 300',
       level: 'Erdgeschoss',
     });
   });

@@ -11,6 +11,16 @@ export function formatNumber(value: number): string {
   return numberFormat.format(value);
 }
 
+const quantityFormat = new Intl.NumberFormat('es-CO', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+/** Quantities in a takeoff are read with two decimals (e.g. 12,35 m³). */
+export function formatQuantity(value: number): string {
+  return quantityFormat.format(value);
+}
+
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${formatNumber(Math.round(bytes / 1024))} KB`;

@@ -107,7 +107,11 @@ function toGroup(definition: ItemData): PropertyGroup | null {
 }
 
 export function toElementProperties(localId: number, item: ItemData): ElementProperties {
-  const type = related(item, 'IsTypedBy')[0];
+  // Fragments exposes IfcRelDefinesByType through IsDefinedBy as well: the type object
+  // (IFCWALLTYPE, IFCDOORTYPE...) sits next to the property sets.
+  const type = related(item, 'IsDefinedBy').find((definition) =>
+    /TYPE$/.test(text(definition, '_category')?.toUpperCase() ?? ''),
+  );
   const container = related(item, 'ContainedInStructure')[0];
   const groups = related(item, 'IsDefinedBy')
     .map(toGroup)
