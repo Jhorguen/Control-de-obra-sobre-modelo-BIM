@@ -6,7 +6,7 @@ import {
   type CalcItem,
 } from './budgetCalculation.js';
 
-// Progress measures as pure functions (see PLAN.md, "Fórmulas de avance").
+// Progress measures as pure functions (formulas explained in the README).
 
 export interface HistoryEntry {
   status: ProgressStatus;

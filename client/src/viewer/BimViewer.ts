@@ -14,7 +14,7 @@ const MODEL_ID = 'model';
 export type StatusColorGroups = Record<ProgressStatus, readonly string[]>;
 
 /**
- * Progress colors (PLAN.md: gray pending, yellow in progress, green done). They are
+ * Progress colors: gray pending, yellow in progress, green done. They are
  * Highlighter styles with the default priority, so the selection color (top priority)
  * paints over them and clearing a selection restores each element's status color.
  */

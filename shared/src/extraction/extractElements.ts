@@ -22,7 +22,7 @@ export interface IfcApiLike {
   GetNameFromTypeCode(type: number): string;
 }
 
-/** One physical element as stored by the API (see PLAN.md, section 4). */
+/** One physical element as stored by the API. */
 export interface ExtractedElement {
   globalId: string;
   ifcClass: string;

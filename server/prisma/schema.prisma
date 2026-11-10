@@ -1,4 +1,4 @@
-// Data model: see PLAN.md section 5.
+// Data model (see the "Modelo de datos" section of the README).
 // Tables and columns use snake_case in PostgreSQL; the Prisma client exposes camelCase.
 
 generator client {

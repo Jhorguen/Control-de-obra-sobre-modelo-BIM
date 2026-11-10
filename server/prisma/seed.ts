@@ -170,7 +170,7 @@ const ITEMS: (BudgetItemInput & { selector: Selector })[] = [
 ];
 
 /** Planned dates: a site started about three months ago, with openings still ahead. */
-const PLAN: [Selector, number][] = [
+const SCHEDULE: [Selector, number][] = [
   [named('Bodenplatte'), -100],
   [(e) => isWall(e) && e.level === groundFloor, -75],
   [named('Unterzug-1'), -62],
@@ -216,7 +216,7 @@ async function main(): Promise<void> {
     const item = await createBudgetItem(prisma, projectId, input);
     await assignBudgetItem(prisma, projectId, guidsOf(selector), item.id);
   }
-  for (const [selector, days] of PLAN) {
+  for (const [selector, days] of SCHEDULE) {
     await setPlannedDate(prisma, projectId, guidsOf(selector), day(days));
   }
   for (const [selector, status, days, note] of LOG) {
