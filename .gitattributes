@@ -1,0 +1,9 @@
+# Normalize line endings to LF in the repo (Prettier expects LF; avoids CRLF noise on Windows).
+* text=auto eol=lf
+
+*.ifc binary
+*.frag binary
+*.png binary
+*.jpg binary
+*.gif binary
+*.wasm binary

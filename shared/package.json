@@ -1,0 +1,21 @@
+{
+  "name": "@bim/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "API contract shared by client and server: Zod schemas and inferred types.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  }
+}
