@@ -1,0 +1,22 @@
+# Render Blueprint for the API (https://render.com/docs/blueprint-spec).
+# In Render: New > Blueprint > select this repository. Then set DATABASE_URL (Neon) and
+# CORS_ORIGINS (the Vercel URL) in the service's Environment tab.
+services:
+  - type: web
+    name: control-obra-bim-api
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci && npm run build -w @bim/shared && npm run build -w @bim/server
+    # Migrations run on every start: `migrate deploy` only applies pending ones.
+    startCommand: npm run db:deploy -w @bim/server && npm start -w @bim/server
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
