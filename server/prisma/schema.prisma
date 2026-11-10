@@ -1,0 +1,155 @@
+// Data model: see PLAN.md section 5.
+// Tables and columns use snake_case in PostgreSQL; the Prisma client exposes camelCase.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  runtime             = "nodejs"
+  moduleFormat        = "esm"
+  // The server compiles with moduleResolution NodeNext, which requires explicit .js extensions.
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ModelFileKind {
+  IFC // original file, kept so it can be downloaded or re-processed
+  FRAG // That Open Fragments, what the viewer loads (much faster than re-parsing the IFC)
+}
+
+enum Unit {
+  M3
+  M2
+  M
+  KG
+  UN
+}
+
+/// Which extracted quantity of an element feeds a budget item.
+enum QuantitySource {
+  VOLUME
+  AREA
+  LENGTH
+  COUNT
+}
+
+enum ProgressStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(120)
+  description String?
+  /// The public demo project cannot be deleted nor have its model replaced.
+  isDemo      Boolean  @default(false) @map("is_demo")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  files       ModelFile[]
+  elements    Element[]
+  budgetItems BudgetItem[]
+
+  @@map("projects")
+}
+
+/// Model files live in PostgreSQL (bytea) because free-tier hosting disks are ephemeral.
+model ModelFile {
+  id        Int           @id @default(autoincrement())
+  projectId Int           @map("project_id")
+  kind      ModelFileKind
+  fileName  String        @map("file_name")
+  sizeBytes Int           @map("size_bytes")
+  data      Bytes
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, kind])
+  @@map("model_files")
+}
+
+/// One physical IFC element. The IFC GlobalId links the 3D model with these records.
+model Element {
+  id          Int       @id @default(autoincrement())
+  projectId   Int       @map("project_id")
+  /// IFC GlobalId (22-character compressed GUID), stable across model versions.
+  globalId    String    @map("global_id")
+  ifcClass    String    @map("ifc_class")
+  name        String?
+  typeName    String?   @map("type_name")
+  level       String?
+  /// Quantities normalized to SI units. null = the IFC does not provide it (never invented).
+  volume      Float? // m3
+  area        Float? // m2
+  length      Float? // m
+  plannedDate DateTime? @map("planned_date") @db.Date
+  /// Set when a re-imported model no longer contains this element; history is kept.
+  removedAt   DateTime? @map("removed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  project         Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  budgetItems     ElementBudgetItem[]
+  progressRecords ProgressRecord[]
+
+  @@unique([projectId, globalId])
+  @@index([projectId, ifcClass])
+  @@index([projectId, level])
+  @@map("elements")
+}
+
+/// A budget line. Its unit price comes from an APU (unit price analysis).
+model BudgetItem {
+  id             Int            @id @default(autoincrement())
+  projectId      Int            @map("project_id")
+  code           String         @db.VarChar(30)
+  description    String
+  unit           Unit
+  quantitySource QuantitySource @map("quantity_source")
+  /// Multiplier over the base quantity, e.g. 90 kg/m3 of rebar or 2 formwork faces per wall.
+  factor         Decimal        @default(1) @db.Decimal(12, 4)
+  /// Colombian pesos. Money is never stored as floating point.
+  unitPrice      Decimal        @map("unit_price") @db.Decimal(16, 2)
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  project  Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  elements ElementBudgetItem[]
+
+  @@unique([projectId, code])
+  @@map("budget_items")
+}
+
+/// Many-to-many: a concrete wall carries concrete (m3), rebar (kg) and formwork (m2).
+model ElementBudgetItem {
+  elementId    Int      @map("element_id")
+  budgetItemId Int      @map("budget_item_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  element    Element    @relation(fields: [elementId], references: [id], onDelete: Cascade)
+  budgetItem BudgetItem @relation(fields: [budgetItemId], references: [id], onDelete: Cascade)
+
+  @@id([elementId, budgetItemId])
+  @@index([budgetItemId])
+  @@map("element_budget_items")
+}
+
+/// Progress log. The current status of an element is its latest record by (date, createdAt).
+model ProgressRecord {
+  id        Int            @id @default(autoincrement())
+  elementId Int            @map("element_id")
+  status    ProgressStatus
+  date      DateTime       @db.Date
+  note      String?
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  element Element @relation(fields: [elementId], references: [id], onDelete: Cascade)
+
+  @@index([elementId, date(sort: Desc), createdAt(sort: Desc)])
+  @@map("progress_records")
+}
