@@ -3,6 +3,7 @@ import { isDatabaseUp } from './db.js';
 import type { PrismaClient } from './generated/prisma/client.js';
 import { cors } from './middleware/cors.js';
 import { errorHandler, notFoundHandler } from './middleware/errors.js';
+import { createBudgetItemsRouter, createProjectBudgetRouter } from './routes/budget.js';
 import { createElementsRouter } from './routes/elements.js';
 import { createHealthRouter } from './routes/health.js';
 import { createProjectsRouter } from './routes/projects.js';
@@ -34,6 +35,8 @@ export function createApp(deps: AppDependencies): Express {
   app.use('/api/health', createHealthRouter(checkDatabase));
   app.use('/api/projects', createProjectsRouter(prisma));
   app.use('/api/projects/:id', createElementsRouter(prisma));
+  app.use('/api/projects/:id', createProjectBudgetRouter(prisma));
+  app.use('/api/budget-items', createBudgetItemsRouter(prisma));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

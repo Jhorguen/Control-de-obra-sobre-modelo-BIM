@@ -6,6 +6,7 @@ import { z } from 'zod';
 // Validation messages in Spanish for the whole app (server and client share this zod instance).
 z.config(z.locales.es());
 
+export * from './budget.js';
 export * from './elements.js';
 export * from './errors.js';
 export * from './health.js';
