@@ -2,8 +2,11 @@ import { errorResponseSchema, healthResponseSchema } from '@bim/shared';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from './app.js';
+import type { PrismaClient } from './generated/prisma/client.js';
 
-const appWithDatabase = (up: boolean) => createApp({ checkDatabase: () => Promise.resolve(up) });
+// These tests never touch the database: the health check is replaced by a stub.
+const appWithDatabase = (up: boolean) =>
+  createApp({ prisma: {} as PrismaClient, checkDatabase: () => Promise.resolve(up) });
 
 describe('GET /api/health', () => {
   it('answers 200 with status ok when the database responds', async () => {
