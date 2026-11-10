@@ -32,6 +32,34 @@ export function formatCOP(value: number): string {
   return copFormat.format(value);
 }
 
+const compactCopFormat = new Intl.NumberFormat('es-CO', {
+  style: 'currency',
+  currency: 'COP',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+
+/** Short amounts for chart axes: $ 99,4 M. */
+export function formatCOPCompact(value: number): string {
+  return compactCopFormat.format(value);
+}
+
+const percentFormat = new Intl.NumberFormat('es-CO', {
+  style: 'percent',
+  maximumFractionDigits: 1,
+});
+
+/** 0.256 -> "25,6 %" */
+export function formatPercent(ratio: number): string {
+  return percentFormat.format(ratio);
+}
+
+/** YYYY-MM-DD -> "10 mar 2026", without time zone shifts. */
+export function formatIsoDate(iso: string): string {
+  const [year, month, day] = iso.split('-').map(Number);
+  return dateFormat.format(new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1));
+}
+
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${formatNumber(Math.round(bytes / 1024))} KB`;

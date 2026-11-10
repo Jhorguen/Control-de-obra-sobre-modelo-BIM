@@ -9,8 +9,13 @@ import { errorMessage, useAsync } from '../hooks/useAsync';
 import { useModelSelection } from '../hooks/useModelSelection';
 import type { BimViewer } from '../viewer/BimViewer';
 import { extractFromIfc } from '../viewer/extractInBrowser';
+import { getStatusMap } from '../api/progress';
+import { groupGuidsByStatus, STATUS_LABELS } from '../progressLabels';
+import { STATUS_COLORS } from '../viewer/BimViewer';
 import { useBimViewer } from '../viewer/useBimViewer';
 import { BudgetTab } from './project/BudgetTab';
+import { DashboardTab } from './project/DashboardTab';
+import { ProgressTab } from './project/ProgressTab';
 import { ItemsTab } from './project/ItemsTab';
 import { QuantitiesTab } from './project/QuantitiesTab';
 
@@ -121,13 +126,51 @@ function ModelStatusOverlay({ status }: { status: ModelStatus }) {
   }
 }
 
-type Tab = 'quantities' | 'items' | 'budget';
+type Tab = 'quantities' | 'items' | 'budget' | 'progress' | 'dashboard';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'quantities', label: 'Cantidades' },
   { id: 'items', label: 'Ítems y asignación' },
   { id: 'budget', label: 'Presupuesto' },
+  { id: 'progress', label: 'Avance' },
+  { id: 'dashboard', label: 'Tablero' },
 ];
+
+function StatusLegend() {
+  return (
+    <ul className="viewer-legend" aria-label="Colores por estado">
+      {(['PENDING', 'IN_PROGRESS', 'DONE'] as const).map((s) => (
+        <li key={s}>
+          <span className="swatch" style={{ background: STATUS_COLORS[s] }} aria-hidden="true" />
+          {STATUS_LABELS[s]}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Current status of every element; paints the model when coloring is on. */
+function useStatusColoring(
+  viewer: BimViewer | null,
+  projectId: number,
+  dataVersion: number,
+  modelReady: boolean,
+) {
+  const [enabled, setEnabled] = useState(false);
+  const { state } = useAsync(
+    (signal) => getStatusMap(projectId, signal),
+    `${projectId}:${dataVersion}`,
+  );
+  const entries = state.status === 'success' ? state.data : null;
+
+  useEffect(() => {
+    if (!viewer || !modelReady) return;
+    if (enabled && entries) void viewer.applyStatusColors(groupGuidsByStatus(entries));
+    else void viewer.clearStatusColors();
+  }, [viewer, modelReady, enabled, entries]);
+
+  return { enabled, setEnabled, entries: entries ?? [] };
+}
 
 function ProjectView({
   project,
@@ -143,6 +186,7 @@ function ProjectView({
   const [dataVersion, setDataVersion] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
   const busy = ['converting', 'extracting', 'uploading', 'loading'].includes(status.kind);
+  const coloring = useStatusColoring(viewer, project.id, dataVersion, status.kind === 'ready');
 
   /** Extracts elements from the IFC and sends the full list to the API. */
   async function syncElements(ifcBytes: Uint8Array) {
@@ -227,9 +271,19 @@ function ProjectView({
         </div>
         <div className="header-actions">
           {status.kind === 'ready' && (
-            <button type="button" onClick={() => void viewer?.fitToModel()}>
-              Encuadrar
-            </button>
+            <>
+              <button
+                type="button"
+                aria-pressed={coloring.enabled}
+                className={coloring.enabled ? 'toggle on' : 'toggle'}
+                onClick={() => coloring.setEnabled(!coloring.enabled)}
+              >
+                {coloring.enabled ? 'Quitar colores de avance' : 'Colorear por avance'}
+              </button>
+              <button type="button" onClick={() => void viewer?.fitToModel()}>
+                Encuadrar
+              </button>
+            </>
           )}
           {!project.isDemo && (
             <ModelUpload
@@ -254,6 +308,7 @@ function ProjectView({
         <div className="viewer-shell">
           <div ref={containerRef} className="viewer-canvas" />
           <ModelStatusOverlay status={status} />
+          {coloring.enabled && status.kind === 'ready' && <StatusLegend />}
         </div>
         <aside className="side-panel card">
           <h3>Propiedades</h3>
@@ -307,6 +362,16 @@ function ProjectView({
           {tab === 'budget' && (
             <BudgetTab projectId={project.id} dataVersion={dataVersion} onSelect={selectInModel} />
           )}
+          {tab === 'progress' && (
+            <ProgressTab
+              projectId={project.id}
+              dataVersion={dataVersion}
+              selectedGuids={selection.guids}
+              statusMap={coloring.entries}
+              onDataChanged={bumpData}
+            />
+          )}
+          {tab === 'dashboard' && <DashboardTab projectId={project.id} dataVersion={dataVersion} />}
         </div>
       </section>
     </div>

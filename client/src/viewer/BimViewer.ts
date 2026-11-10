@@ -1,3 +1,4 @@
+import type { ProgressStatus } from '@bim/shared';
 import * as OBC from '@thatopen/components';
 import * as OBF from '@thatopen/components-front';
 import type { FragmentsModel, ItemData } from '@thatopen/fragments';
@@ -9,6 +10,21 @@ import * as THREE from 'three';
 const WEB_IFC_WASM_PATH = '/wasm/';
 /** The app shows one model per project, always registered under this id. */
 const MODEL_ID = 'model';
+
+export type StatusColorGroups = Record<ProgressStatus, readonly string[]>;
+
+/**
+ * Progress colors (PLAN.md: gray pending, yellow in progress, green done). They are
+ * Highlighter styles with the default priority, so the selection color (top priority)
+ * paints over them and clearing a selection restores each element's status color.
+ */
+export const STATUS_COLORS: Record<ProgressStatus, string> = {
+  PENDING: '#b5b3aa',
+  IN_PROGRESS: '#fab219',
+  DONE: '#0ca30c',
+};
+const statusStyle = (status: ProgressStatus) => `status-${status}`;
+const STATUSES: ProgressStatus[] = ['PENDING', 'IN_PROGRESS', 'DONE'];
 
 type World = OBC.SimpleWorld<OBC.SimpleScene, OBC.OrthoPerspectiveCamera, OBC.SimpleRenderer>;
 
@@ -72,6 +88,15 @@ export class BimViewer {
       this.selectionListener?.([...(modelIdMap[MODEL_ID] ?? [])]);
     });
     selectEvents.onClear.add(() => this.selectionListener?.([]));
+
+    for (const status of STATUSES) {
+      this.highlighter.styles.set(statusStyle(status), {
+        color: new THREE.Color(STATUS_COLORS[status]),
+        opacity: 1,
+        transparent: false,
+        renderedFaces: 0,
+      });
+    }
   }
 
   /** Registers the callback that receives the selected element ids (local ids). */
@@ -152,6 +177,34 @@ export class BimViewer {
       true,
       zoom,
     );
+  }
+
+  private async localIdsOf(guids: readonly string[]): Promise<number[]> {
+    const model = this.model;
+    if (!model || guids.length === 0) return [];
+    const ids = await model.getLocalIdsByGuids([...guids]);
+    return ids.filter((id): id is number => id !== null);
+  }
+
+  /** Paints every element with the color of its current progress status. */
+  async applyStatusColors(groups: StatusColorGroups): Promise<void> {
+    for (const status of STATUSES) {
+      const localIds = await this.localIdsOf(groups[status]);
+      if (localIds.length === 0) {
+        await this.highlighter.clear(statusStyle(status));
+        continue;
+      }
+      await this.highlighter.highlightByID(
+        statusStyle(status),
+        { [MODEL_ID]: new Set(localIds) },
+        true,
+        false,
+      );
+    }
+  }
+
+  async clearStatusColors(): Promise<void> {
+    for (const status of STATUSES) await this.highlighter.clear(statusStyle(status));
   }
 
   /** Raw item data for one element: attributes plus related property sets and container. */
