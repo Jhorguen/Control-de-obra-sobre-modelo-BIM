@@ -4,6 +4,10 @@ import type { ZodType } from 'zod';
 // Empty in development (Vite proxies /api); the backend URL in production.
 const API_BASE_URL = `${import.meta.env.VITE_API_URL ?? ''}/api`;
 
+export function apiUrl(path: string): string {
+  return `${API_BASE_URL}${path}`;
+}
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -13,6 +17,25 @@ export class ApiError extends Error {
     super(message);
     this.name = 'ApiError';
   }
+}
+
+/** Builds an ApiError from a non-2xx response, using the API's `{ error }` body when present. */
+export async function readApiError(response: Response): Promise<ApiError> {
+  const body: unknown = await response.json().catch(() => null);
+  const apiError = errorResponseSchema.safeParse(body);
+  if (apiError.success) {
+    const { code, message } = apiError.data.error;
+    return new ApiError(response.status, code, message);
+  }
+  // A 5xx without our error format usually means a proxy or gateway could not reach the API.
+  if (response.status >= 500) {
+    return new ApiError(response.status, 'NETWORK_ERROR', 'No se pudo contactar el servidor.');
+  }
+  return new ApiError(
+    response.status,
+    'UNEXPECTED_RESPONSE',
+    `Respuesta inesperada del servidor (HTTP ${response.status}).`,
+  );
 }
 
 interface RequestOptions extends RequestInit {
@@ -33,7 +56,7 @@ export async function apiRequest<T>(
 
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(apiUrl(path), {
       ...init,
       headers: { Accept: 'application/json', ...init.headers },
     });
@@ -42,33 +65,19 @@ export async function apiRequest<T>(
     throw new ApiError(0, 'NETWORK_ERROR', 'No se pudo contactar el servidor.');
   }
 
-  const body: unknown = await response.json().catch(() => null);
-
-  if (response.ok || acceptStatuses.includes(response.status)) {
-    const parsed = schema.safeParse(body);
-    if (!parsed.success) {
-      throw new ApiError(
-        response.status,
-        'INVALID_RESPONSE',
-        'La respuesta del servidor no tiene el formato esperado.',
-      );
-    }
-    return parsed.data;
+  if (!response.ok && !acceptStatuses.includes(response.status)) {
+    throw await readApiError(response);
   }
 
-  const apiError = errorResponseSchema.safeParse(body);
-  if (apiError.success) {
-    const { code, message } = apiError.data.error;
-    throw new ApiError(response.status, code, message);
+  // 204 No Content (e.g. DELETE) has no body: parse it as null.
+  const body: unknown = response.status === 204 ? null : await response.json().catch(() => null);
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    throw new ApiError(
+      response.status,
+      'INVALID_RESPONSE',
+      'La respuesta del servidor no tiene el formato esperado.',
+    );
   }
-
-  // A 5xx without our error format usually means a proxy or gateway could not reach the API.
-  if (response.status >= 500) {
-    throw new ApiError(response.status, 'NETWORK_ERROR', 'No se pudo contactar el servidor.');
-  }
-  throw new ApiError(
-    response.status,
-    'UNEXPECTED_RESPONSE',
-    `Respuesta inesperada del servidor (HTTP ${response.status}).`,
-  );
+  return parsed.data;
 }

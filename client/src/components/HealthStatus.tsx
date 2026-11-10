@@ -1,14 +1,12 @@
 import type { HealthResponse } from '@bim/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { fetchHealth } from '../api/health';
-import { ApiError } from '../api/http';
+import { errorMessage } from '../hooks/useAsync';
 
 type HealthState =
   | { kind: 'loading' }
   | { kind: 'success'; health: HealthResponse }
   | { kind: 'error'; message: string };
-
-const timeFormat = new Intl.DateTimeFormat('es-CO', { timeStyle: 'medium' });
 
 function useHealth() {
   const [state, setState] = useState<HealthState>({ kind: 'loading' });
@@ -19,9 +17,7 @@ function useHealth() {
     fetchHealth(controller.signal).then(
       (health) => setState({ kind: 'success', health }),
       (error: unknown) => {
-        if (controller.signal.aborted) return;
-        const message = error instanceof ApiError ? error.message : 'Ocurrió un error inesperado.';
-        setState({ kind: 'error', message });
+        if (!controller.signal.aborted) setState({ kind: 'error', message: errorMessage(error) });
       },
     );
     // Abort on unmount or retry so a stale response never overwrites a newer one.
@@ -36,55 +32,33 @@ function useHealth() {
   return { state, retry };
 }
 
-function StatusRow({ label, ok, text }: { label: string; ok: boolean; text: string }) {
-  return (
-    <div className="status-row">
-      <dt>{label}</dt>
-      <dd>
-        <span className={`badge ${ok ? 'badge--ok' : 'badge--error'}`}>{text}</span>
-      </dd>
-    </div>
-  );
-}
-
+/** Compact server status shown in the header (API and database). */
 export function HealthStatus() {
   const { state, retry } = useHealth();
-  const loading = state.kind === 'loading';
+
+  let tone: 'ok' | 'warn' | 'error' | 'pending' = 'pending';
+  let label = 'Conectando con el servidor…';
+  let detail = '';
+  if (state.kind === 'success') {
+    const dbUp = state.health.database === 'up';
+    tone = dbUp ? 'ok' : 'warn';
+    label = dbUp ? 'Servidor conectado' : 'Base de datos sin conexión';
+  } else if (state.kind === 'error') {
+    tone = 'error';
+    label = 'Servidor sin conexión';
+    detail = state.message;
+  }
 
   return (
-    <section className="card" aria-labelledby="health-title" aria-busy={loading}>
-      <div className="card__header">
-        <h2 id="health-title">Estado del sistema</h2>
-        <button type="button" onClick={retry} disabled={loading}>
-          Volver a consultar
-        </button>
-      </div>
-
-      {state.kind === 'loading' && <p className="muted">Consultando el servidor…</p>}
-
-      {state.kind === 'error' && (
-        <>
-          <dl>
-            <StatusRow label="API" ok={false} text="Sin conexión" />
-          </dl>
-          <p className="muted">{state.message}</p>
-        </>
-      )}
-
-      {state.kind === 'success' && (
-        <dl>
-          <StatusRow label="API" ok text="Conectada" />
-          <StatusRow
-            label="Base de datos"
-            ok={state.health.database === 'up'}
-            text={state.health.database === 'up' ? 'Conectada' : 'Sin conexión'}
-          />
-          <div className="status-row">
-            <dt>Última consulta</dt>
-            <dd>{timeFormat.format(new Date(state.health.timestamp))}</dd>
-          </div>
-        </dl>
-      )}
-    </section>
+    <button
+      type="button"
+      className={`status-pill status-pill--${tone}`}
+      onClick={retry}
+      title={detail || 'Clic para volver a consultar'}
+      aria-live="polite"
+    >
+      <span className="status-dot" aria-hidden="true" />
+      {label}
+    </button>
   );
 }

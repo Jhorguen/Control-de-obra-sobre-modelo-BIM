@@ -20,3 +20,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# web-ifc wasm copied from node_modules at dev/build time
+client/public/wasm/
