@@ -3,6 +3,7 @@ import { isDatabaseUp } from './db.js';
 import type { PrismaClient } from './generated/prisma/client.js';
 import { cors } from './middleware/cors.js';
 import { errorHandler, notFoundHandler } from './middleware/errors.js';
+import { createElementsRouter } from './routes/elements.js';
 import { createHealthRouter } from './routes/health.js';
 import { createProjectsRouter } from './routes/projects.js';
 
@@ -25,10 +26,14 @@ export function createApp(deps: AppDependencies): Express {
   const app = express();
   app.disable('x-powered-by');
   app.use(cors(corsOrigins));
+  // The element list of a whole model can weigh a few MB. Only this route gets a larger
+  // body limit; it is registered first, so the global parser below skips the parsed body.
+  app.post('/api/projects/:id/elements/bulk', express.json({ limit: '10mb' }));
   app.use(express.json());
 
   app.use('/api/health', createHealthRouter(checkDatabase));
   app.use('/api/projects', createProjectsRouter(prisma));
+  app.use('/api/projects/:id', createElementsRouter(prisma));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

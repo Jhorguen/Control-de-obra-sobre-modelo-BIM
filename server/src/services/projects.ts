@@ -75,7 +75,7 @@ export async function createProject(
 }
 
 /** The public demo must stay usable for every visitor, so destructive actions are blocked. */
-function assertNotDemo(project: { isDemo: boolean }): void {
+export function assertNotDemo(project: { isDemo: boolean }): void {
   if (project.isDemo) {
     throw new HttpError(
       403,
