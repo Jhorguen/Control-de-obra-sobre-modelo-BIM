@@ -1,15 +1,21 @@
 # Render Blueprint for the API (https://render.com/docs/blueprint-spec).
 # In Render: New > Blueprint > select this repository. Then set DATABASE_URL (Neon) and
-# CORS_ORIGINS (the Vercel URL) in the service's Environment tab.
+# CORS_ORIGINS (the Vercel URL) in the service's Environment tab. See docs/DEPLOY.md.
 services:
   - type: web
     name: control-obra-bim-api
     runtime: node
     plan: free
     region: oregon
-    buildCommand: npm ci && npm run build -w @bim/shared && npm run build -w @bim/server
-    # Migrations run on every start: `migrate deploy` only applies pending ones.
-    startCommand: npm run db:deploy -w @bim/server && npm start -w @bim/server
+    # --include=dev: NODE_ENV=production would otherwise skip devDependencies, and the
+    # build needs them (Prisma CLI, TypeScript, tsx for the seed).
+    buildCommand: npm ci --include=dev && npm run build -w @bim/shared && npm run build -w @bim/server
+    # Pending migrations are applied and the demo project is created if it does not exist
+    # yet; then the API starts.
+    startCommand: >-
+      npm run db:deploy -w @bim/server &&
+      npm run db:seed -w @bim/server -- --if-missing &&
+      npm start -w @bim/server
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION

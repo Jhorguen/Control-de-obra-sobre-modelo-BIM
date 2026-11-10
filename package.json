@@ -13,6 +13,8 @@
     "node": ">=24"
   },
   "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "dev": "node scripts/dev.mjs",
     "dev:server": "npm run dev -w @bim/server",
     "dev:client": "npm run dev -w @bim/client",
     "build": "npm run build -w @bim/shared && npm run build -w @bim/server && npm run build -w @bim/client",
