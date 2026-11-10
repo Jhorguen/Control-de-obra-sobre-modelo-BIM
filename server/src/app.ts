@@ -6,6 +6,7 @@ import { errorHandler, notFoundHandler } from './middleware/errors.js';
 import { createBudgetItemsRouter, createProjectBudgetRouter } from './routes/budget.js';
 import { createElementsRouter } from './routes/elements.js';
 import { createHealthRouter } from './routes/health.js';
+import { createElementProgressRouter, createProjectProgressRouter } from './routes/progress.js';
 import { createProjectsRouter } from './routes/projects.js';
 
 /**
@@ -36,7 +37,9 @@ export function createApp(deps: AppDependencies): Express {
   app.use('/api/projects', createProjectsRouter(prisma));
   app.use('/api/projects/:id', createElementsRouter(prisma));
   app.use('/api/projects/:id', createProjectBudgetRouter(prisma));
+  app.use('/api/projects/:id', createProjectProgressRouter(prisma));
   app.use('/api/budget-items', createBudgetItemsRouter(prisma));
+  app.use('/api/elements', createElementProgressRouter(prisma));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

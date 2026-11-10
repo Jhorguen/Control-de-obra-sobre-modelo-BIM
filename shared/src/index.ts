@@ -10,4 +10,5 @@ export * from './budget.js';
 export * from './elements.js';
 export * from './errors.js';
 export * from './health.js';
+export * from './progress.js';
 export * from './projects.js';
