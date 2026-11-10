@@ -8,7 +8,7 @@ Casa unifamiliar de dos plantas (IFC4, exportada desde ArchiCAD 20, 2,5 MB). Inc
 - **Licencia:** "These examples are made by the Institute for Applied Computer Science (IAI) at the Karlsruhe Institute of Technology (KIT), and are for unrestricted use."
 - **Fuente:** https://www.ifcwiki.org/index.php?title=KIT_IFC_Examples
 
-## Fixture de tests: `client/src/extraction/__fixtures__/Building-Architecture.ifc`
+## Fixture de tests: `shared/src/extraction/__fixtures__/Building-Architecture.ifc`
 
 Modelo mínimo (IFC4, unidades en milímetros, conjuntos `Qto_*BaseQuantities`) usado en los tests de extracción para cubrir la conversión de unidades.
 

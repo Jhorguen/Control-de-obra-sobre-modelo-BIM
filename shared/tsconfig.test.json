@@ -1,0 +1,12 @@
+{
+  // Type-checks the tests, which run in Node (they read IFC fixtures with node:fs).
+  // Kept apart so the library code itself cannot use Node-only APIs by accident.
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": ["src/**/*.test.ts"]
+}
