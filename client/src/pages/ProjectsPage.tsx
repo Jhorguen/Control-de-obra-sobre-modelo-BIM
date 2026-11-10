@@ -4,6 +4,7 @@ import { createProject, deleteProject, listProjects } from '../api/projects';
 import { errorMessage, useAsync } from '../hooks/useAsync';
 import { formatDate } from '../format';
 import { Link } from '../components/Link';
+import { Loading } from '../components/Loading';
 import { navigate } from '../router';
 
 function CreateProjectForm() {
@@ -39,7 +40,9 @@ function CreateProjectForm() {
         />
       </label>
       <label>
-        Descripción <span className="muted">(opcional)</span>
+        <span>
+          Descripción <span className="muted">(opcional)</span>
+        </span>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -101,7 +104,7 @@ export function ProjectsPage() {
     <div className="projects-page">
       <section>
         <h2 className="section-title">Proyectos</h2>
-        {state.status === 'loading' && <p className="muted">Cargando proyectos…</p>}
+        {state.status === 'loading' && <Loading text="Cargando proyectos…" />}
         {state.status === 'error' && (
           <div className="card error-box">
             <p>{state.error}</p>

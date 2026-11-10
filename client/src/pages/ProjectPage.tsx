@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { uploadElements } from '../api/elements';
 import { downloadModelFile, getProject, uploadModelFile } from '../api/projects';
 import { Link } from '../components/Link';
+import { Loading } from '../components/Loading';
 import { PropertiesPanel } from '../components/PropertiesPanel';
 import { formatBytes, formatNumber } from '../format';
 import { errorMessage, useAsync } from '../hooks/useAsync';
@@ -381,7 +382,7 @@ function ProjectView({
 export function ProjectPage({ id }: { id: number }) {
   const { state, reload, setData } = useAsync((signal) => getProject(id, signal), String(id));
 
-  if (state.status === 'loading') return <p className="muted">Cargando proyecto…</p>;
+  if (state.status === 'loading') return <Loading text="Cargando proyecto…" />;
   if (state.status === 'error') {
     return (
       <div className="card error-box">

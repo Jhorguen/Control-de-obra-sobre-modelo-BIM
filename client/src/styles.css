@@ -197,6 +197,42 @@ a:focus-visible {
   background: var(--color-error-bg);
 }
 
+/* ---------- Loading ---------- */
+
+.loading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.loading p {
+  margin: 0;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex: none;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2.4s;
+  }
+}
+
 /* ---------- Server status ---------- */
 
 .status-pill {

@@ -2,6 +2,7 @@ import type { HealthResponse } from '@bim/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { fetchHealth } from '../api/health';
 import { errorMessage } from '../hooks/useAsync';
+import { useDelayedFlag } from '../hooks/useDelayedFlag';
 
 type HealthState =
   | { kind: 'loading' }
@@ -35,9 +36,11 @@ function useHealth() {
 /** Compact server status shown in the header (API and database). */
 export function HealthStatus() {
   const { state, retry } = useHealth();
+  const slow = useDelayedFlag(5000);
 
   let tone: 'ok' | 'warn' | 'error' | 'pending' = 'pending';
-  let label = 'Conectando con el servidor…';
+  // A free-tier API that slept answers its first request after up to a minute.
+  let label = slow ? 'Despertando el servidor…' : 'Conectando con el servidor…';
   let detail = '';
   if (state.kind === 'success') {
     const dbUp = state.health.database === 'up';
