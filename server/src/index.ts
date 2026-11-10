@@ -1,10 +1,10 @@
 // env must be imported first: it loads .env and validates the variables.
 import { env } from './env.js';
 import { createApp } from './app.js';
-import { createPrismaClient, isDatabaseUp } from './db.js';
+import { createPrismaClient } from './db.js';
 
 const prisma = createPrismaClient(env.DATABASE_URL);
-const app = createApp({ checkDatabase: () => isDatabaseUp(prisma) });
+const app = createApp({ prisma, corsOrigins: env.CORS_ORIGINS });
 
 const server = app.listen(env.PORT, () => {
   console.log(`API listening on http://localhost:${env.PORT}`);

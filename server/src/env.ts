@@ -9,6 +9,16 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.url(),
+  /** Comma-separated list of frontend origins allowed by CORS, e.g. https://app.vercel.app */
+  CORS_ORIGINS: z
+    .string()
+    .default('')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean),
+    ),
 });
 
 const parsed = envSchema.safeParse(process.env);

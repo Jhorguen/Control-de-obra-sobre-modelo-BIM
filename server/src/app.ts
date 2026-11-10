@@ -1,21 +1,34 @@
 import express, { type Express } from 'express';
+import { isDatabaseUp } from './db.js';
+import type { PrismaClient } from './generated/prisma/client.js';
+import { cors } from './middleware/cors.js';
 import { errorHandler, notFoundHandler } from './middleware/errors.js';
 import { createHealthRouter } from './routes/health.js';
+import { createProjectsRouter } from './routes/projects.js';
 
 /**
  * External dependencies are injected instead of imported, so the HTTP layer can be
- * tested with Supertest without a real database.
+ * tested with Supertest against a test database (or none at all for /health).
  */
 export interface AppDependencies {
-  checkDatabase: () => Promise<boolean>;
+  prisma: PrismaClient;
+  /** Origins allowed to call the API from a browser (the deployed frontend). */
+  corsOrigins?: readonly string[];
+  /** Overrides the database check; used by tests that run without a database. */
+  checkDatabase?: () => Promise<boolean>;
 }
 
 export function createApp(deps: AppDependencies): Express {
+  const { prisma, corsOrigins = [] } = deps;
+  const checkDatabase = deps.checkDatabase ?? (() => isDatabaseUp(prisma));
+
   const app = express();
   app.disable('x-powered-by');
+  app.use(cors(corsOrigins));
   app.use(express.json());
 
-  app.use('/api/health', createHealthRouter(deps.checkDatabase));
+  app.use('/api/health', createHealthRouter(checkDatabase));
+  app.use('/api/projects', createProjectsRouter(prisma));
 
   app.use(notFoundHandler);
   app.use(errorHandler);
