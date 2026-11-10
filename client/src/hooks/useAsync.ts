@@ -12,20 +12,15 @@ export function errorMessage(error: unknown): string {
 }
 
 /**
- * Runs an async loader and tracks its state. `reload()` runs it again (e.g. after a
- * mutation). A response that arrives after a newer request started is ignored.
+ * Runs an async loader and tracks its state. It runs again when `key` changes or after
+ * `reload()` (e.g. after a mutation); meanwhile the previous data stays on screen, so
+ * tables do not flicker and their surrounding controls keep their state. Screens that
+ * show a different entity are remounted with a React `key` instead.
+ * A response that arrives after a newer request started is ignored.
  */
 export function useAsync<T>(loader: (signal: AbortSignal) => Promise<T>, key: string) {
   const [state, setState] = useState<AsyncState<T>>({ status: 'loading' });
   const [version, setVersion] = useState(0);
-  const [prevKey, setPrevKey] = useState(key);
-
-  // Show the loading state immediately when the key changes (adjusting state during
-  // render is React's recommended alternative to setState inside an effect).
-  if (key !== prevKey) {
-    setPrevKey(key);
-    setState({ status: 'loading' });
-  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -42,7 +37,11 @@ export function useAsync<T>(loader: (signal: AbortSignal) => Promise<T>, key: st
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, version]);
 
-  const reload = useCallback(() => setVersion((v) => v + 1), []);
+  const reload = useCallback(() => {
+    // After an error, show the loading state again so "Reintentar" gives feedback.
+    setState((current) => (current.status === 'error' ? { status: 'loading' } : current));
+    setVersion((v) => v + 1);
+  }, []);
 
   /** Replaces the data locally without refetching (after a mutation that returns it). */
   const setData = useCallback((data: T) => setState({ status: 'success', data }), []);

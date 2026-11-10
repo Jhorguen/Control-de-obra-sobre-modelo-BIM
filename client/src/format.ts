@@ -21,6 +21,17 @@ export function formatQuantity(value: number): string {
   return quantityFormat.format(value);
 }
 
+const copFormat = new Intl.NumberFormat('es-CO', {
+  style: 'currency',
+  currency: 'COP',
+  maximumFractionDigits: 0,
+});
+
+/** Colombian pesos without cents, as budgets are usually presented: $ 1.234.567. */
+export function formatCOP(value: number): string {
+  return copFormat.format(value);
+}
+
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${formatNumber(Math.round(bytes / 1024))} KB`;

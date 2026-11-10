@@ -10,6 +10,8 @@ import { useModelSelection } from '../hooks/useModelSelection';
 import type { BimViewer } from '../viewer/BimViewer';
 import { extractFromIfc } from '../viewer/extractInBrowser';
 import { useBimViewer } from '../viewer/useBimViewer';
+import { BudgetTab } from './project/BudgetTab';
+import { ItemsTab } from './project/ItemsTab';
 import { QuantitiesTab } from './project/QuantitiesTab';
 
 type ModelStatus =
@@ -119,7 +121,13 @@ function ModelStatusOverlay({ status }: { status: ModelStatus }) {
   }
 }
 
-type Tab = 'quantities';
+type Tab = 'quantities' | 'items' | 'budget';
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'quantities', label: 'Cantidades' },
+  { id: 'items', label: 'Ítems y asignación' },
+  { id: 'budget', label: 'Presupuesto' },
+];
 
 function ProjectView({
   project,
@@ -196,6 +204,8 @@ function ProjectView({
   }
 
   const selectInModel = (guids: string[]) => void viewer?.selectByGuids(guids, true);
+  /** Anything that changes elements, items or progress refetches the tabs' data. */
+  const bumpData = () => setDataVersion((v) => v + 1);
 
   return (
     <div className="project-page">
@@ -257,17 +267,20 @@ function ProjectView({
 
       <section className="card tabs-card">
         <div className="tabs" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'quantities'}
-            className={tab === 'quantities' ? 'active' : ''}
-            onClick={() => setTab('quantities')}
-          >
-            Cantidades
-          </button>
+          {TABS.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              className={tab === id ? 'active' : ''}
+              onClick={() => setTab(id)}
+            >
+              {label}
+            </button>
+          ))}
           <div className="tabs-actions">
-            {project.files.ifc && !project.isDemo && (
+            {tab === 'quantities' && project.files.ifc && !project.isDemo && (
               <button type="button" onClick={() => void reextract()} disabled={busy}>
                 Volver a extraer cantidades
               </button>
@@ -282,6 +295,17 @@ function ProjectView({
               selectedGuids={selection.guids}
               onSelect={selectInModel}
             />
+          )}
+          {tab === 'items' && (
+            <ItemsTab
+              projectId={project.id}
+              dataVersion={dataVersion}
+              selectedGuids={selection.guids}
+              onDataChanged={bumpData}
+            />
+          )}
+          {tab === 'budget' && (
+            <BudgetTab projectId={project.id} dataVersion={dataVersion} onSelect={selectInModel} />
           )}
         </div>
       </section>
