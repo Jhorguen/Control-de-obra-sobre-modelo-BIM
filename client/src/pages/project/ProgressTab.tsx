@@ -4,6 +4,7 @@ import { getElementHistory, recordProgress, setPlannedDate } from '../../api/pro
 import { formatDate, formatIsoDate, formatNumber } from '../../format';
 import { errorMessage, useAsync } from '../../hooks/useAsync';
 import { STATUS_LABELS, todayIso } from '../../progressLabels';
+import { toast } from '../../toast';
 import { STATUS_COLORS } from '../../viewer/BimViewer';
 
 interface Props {
@@ -72,7 +73,6 @@ export function ProgressTab({
   const [note, setNote] = useState('');
   const [plannedDate, setPlannedDateValue] = useState(todayIso);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
 
   const selected = new Set(selectedGuids);
   const selectedEntries = statusMap.filter((e) => selected.has(e.globalId));
@@ -84,12 +84,11 @@ export function ProgressTab({
 
   async function run(action: () => Promise<string>) {
     setBusy(true);
-    setMessage(null);
     try {
-      setMessage(await action());
+      toast(await action());
       onDataChanged();
     } catch (err) {
-      setMessage(errorMessage(err));
+      toast(errorMessage(err), 'error');
     } finally {
       setBusy(false);
     }
@@ -209,12 +208,6 @@ export function ProgressTab({
           </div>
         </div>
       </div>
-
-      {message && (
-        <p className="notice" role="status">
-          {message}
-        </p>
-      )}
 
       {first ? (
         <ElementHistory entry={first} dataVersion={dataVersion} />

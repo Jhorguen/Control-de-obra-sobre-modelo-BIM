@@ -20,6 +20,7 @@ import {
   formatNumber,
   formatPercent,
 } from '../../format';
+import { Skeleton } from '../../components/Skeleton';
 import { useAsync } from '../../hooks/useAsync';
 
 // Chart styling follows the data-viz rules used across the app: two categorical slots
@@ -282,7 +283,7 @@ export function DashboardTab({ projectId, dataVersion }: Props) {
     `${projectId}:${dataVersion}`,
   );
 
-  if (state.status === 'loading') return <p className="muted">Calculando avance…</p>;
+  if (state.status === 'loading') return <Skeleton label="Calculando avance" rows={6} />;
   if (state.status === 'error') {
     return (
       <div className="error-box card">

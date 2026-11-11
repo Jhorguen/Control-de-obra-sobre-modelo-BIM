@@ -2,6 +2,7 @@ import type { ElementGroup } from '@bim/shared';
 import { getBudget } from '../../api/budget';
 import { UNIT_LABELS } from '../../budgetLabels';
 import { formatCOP, formatNumber, formatQuantity } from '../../format';
+import { Skeleton } from '../../components/Skeleton';
 import { useAsync } from '../../hooks/useAsync';
 import { ifcClassLabel } from '../../ifcClasses';
 
@@ -54,7 +55,7 @@ export function BudgetTab({ projectId, dataVersion, onSelect }: Props) {
     `${projectId}:${dataVersion}`,
   );
 
-  if (state.status === 'loading') return <p className="muted">Calculando presupuesto…</p>;
+  if (state.status === 'loading') return <Skeleton label="Calculando presupuesto" rows={8} />;
   if (state.status === 'error') {
     return (
       <div className="error-box card">

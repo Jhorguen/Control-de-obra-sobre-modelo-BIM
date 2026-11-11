@@ -1,5 +1,5 @@
 import type { ElementProperties } from '../viewer/itemProperties';
-import { ChevronRightIcon } from './Icon';
+import { ChevronRightIcon, PointerIcon } from './Icon';
 
 interface Props {
   properties: ElementProperties | null;
@@ -19,10 +19,15 @@ function Field({ label, value, mono }: { label: string; value: string | null; mo
 export function PropertiesPanel({ properties, selectedCount, loading }: Props) {
   if (selectedCount === 0) {
     return (
-      <p className="muted">
-        Haz clic en un elemento del modelo para ver sus propiedades. Con Ctrl + clic seleccionas
-        varios.
-      </p>
+      <div className="properties-empty">
+        <span className="empty-icon" aria-hidden="true">
+          <PointerIcon size={22} />
+        </span>
+        <p className="muted">
+          Haz clic en un elemento del modelo para ver sus propiedades. Con Ctrl + clic seleccionas
+          varios.
+        </p>
+      </div>
     );
   }
   if (loading) return <p className="muted">Cargando propiedades…</p>;

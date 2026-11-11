@@ -19,7 +19,9 @@ import {
 import { quantityRule, SOURCE_LABELS, UNIT_LABELS } from '../../budgetLabels';
 import { PencilIcon, TrashIcon } from '../../components/Icon';
 import { formatCOP, formatNumber } from '../../format';
+import { Skeleton } from '../../components/Skeleton';
 import { errorMessage, useAsync } from '../../hooks/useAsync';
+import { toast } from '../../toast';
 
 interface Props {
   projectId: number;
@@ -214,14 +216,17 @@ function AssignmentBar({
     try {
       const fn = action === 'assign' ? assignBudgetItem : unassignBudgetItem;
       const { affected } = await fn(projectId, selectedGuids, chosen.id);
-      setMessage(
+      const done =
         action === 'assign'
           ? `Ítem ${chosen.code} asignado a ${formatNumber(affected)} elemento(s).`
-          : `Ítem ${chosen.code} quitado de ${formatNumber(affected)} elemento(s).`,
-      );
+          : `Ítem ${chosen.code} quitado de ${formatNumber(affected)} elemento(s).`;
+      setMessage(done);
+      toast(done);
       onDone();
     } catch (err) {
-      setMessage(errorMessage(err));
+      const failed = errorMessage(err);
+      setMessage(failed);
+      toast(failed, 'error');
     } finally {
       setBusy(false);
     }
@@ -287,7 +292,7 @@ export function ItemsTab({ projectId, dataVersion, selectedGuids, onDataChanged 
     }
   }
 
-  if (state.status === 'loading') return <p className="muted">Cargando ítems…</p>;
+  if (state.status === 'loading') return <Skeleton label="Cargando ítems" rows={6} />;
   if (state.status === 'error') {
     return (
       <div className="error-box card">

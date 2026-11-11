@@ -6,6 +6,8 @@ import { ArrowLeftIcon, FrameIcon, LayersIcon, RefreshIcon, UploadIcon } from '.
 import { Link } from '../components/Link';
 import { Loading } from '../components/Loading';
 import { ProgressRibbon } from '../components/ProgressRibbon';
+import { SegmentedTabs } from '../components/SegmentedTabs';
+import { toast } from '../toast';
 import { PropertiesPanel } from '../components/PropertiesPanel';
 import { formatBytes, formatNumber } from '../format';
 import { errorMessage, useAsync } from '../hooks/useAsync';
@@ -102,28 +104,44 @@ function ModelUpload({
   );
 }
 
+function OverlayCard({
+  text,
+  working,
+  error,
+}: {
+  text: string;
+  working?: boolean;
+  error?: boolean;
+}) {
+  return (
+    <div className="viewer-overlay">
+      <div className={`viewer-overlay-card glass ${error ? 'error' : ''}`} role="status">
+        {working && <span className="spinner" aria-hidden="true" />}
+        {text}
+      </div>
+    </div>
+  );
+}
+
 function ModelStatusOverlay({ status }: { status: ModelStatus }) {
   switch (status.kind) {
     case 'loading':
-      return <div className="viewer-overlay">Cargando modelo…</div>;
+      return <OverlayCard text="Cargando modelo…" working />;
     case 'converting':
       return (
-        <div className="viewer-overlay">
-          Procesando el IFC en el navegador… {formatNumber(Math.round(status.progress * 100))} %
-        </div>
+        <OverlayCard
+          text={`Procesando el IFC en el navegador… ${formatNumber(Math.round(status.progress * 100))} %`}
+          working
+        />
       );
     case 'extracting':
-      return <div className="viewer-overlay">Extrayendo elementos y cantidades…</div>;
+      return <OverlayCard text="Extrayendo elementos y cantidades…" working />;
     case 'uploading':
-      return <div className="viewer-overlay">Guardando el modelo en el servidor…</div>;
+      return <OverlayCard text="Guardando el modelo en el servidor…" working />;
     case 'empty':
-      return (
-        <div className="viewer-overlay">
-          Este proyecto aún no tiene modelo. Sube un archivo IFC.
-        </div>
-      );
+      return <OverlayCard text="Este proyecto aún no tiene modelo. Sube un archivo IFC." />;
     case 'error':
-      return <div className="viewer-overlay error-text">{status.message}</div>;
+      return <OverlayCard text={status.message} error />;
     case 'ready':
       return null;
   }
@@ -141,7 +159,7 @@ const TABS: { id: Tab; label: string }[] = [
 
 function StatusLegend() {
   return (
-    <ul className="viewer-legend" aria-label="Colores por estado">
+    <ul className="viewer-legend glass" aria-label="Colores por estado">
       {(['PENDING', 'IN_PROGRESS', 'DONE'] as const).map((s) => (
         <li key={s}>
           <span className={`swatch status-${s}`} aria-hidden="true" />
@@ -196,7 +214,6 @@ function ProjectView({
   const selection = useModelSelection(viewer);
   const [tab, setTab] = useState<Tab>('quantities');
   const [dataVersion, setDataVersion] = useState(0);
-  const [notice, setNotice] = useState<string | null>(null);
   const busy = ['converting', 'extracting', 'uploading', 'loading'].includes(status.kind);
   const coloring = useStatusColoring(viewer, project.id, dataVersion, status.kind === 'ready');
 
@@ -206,7 +223,7 @@ function ProjectView({
     const extraction = await extractFromIfc(ifcBytes);
     setStatus({ kind: 'uploading' });
     const result = await uploadElements(project.id, extraction.elements);
-    setNotice(importSummary(result));
+    toast(importSummary(result));
     setDataVersion((v) => v + 1);
   }
 
@@ -224,7 +241,6 @@ function ProjectView({
       return;
     }
     try {
-      setNotice(null);
       setStatus({ kind: 'converting', progress: 0 });
       const ifcBytes = new Uint8Array(await file.arrayBuffer());
       const fragments = await viewer.loadIfc(ifcBytes, (progress) =>
@@ -243,19 +259,22 @@ function ProjectView({
       await syncElements(ifcBytes);
       setStatus({ kind: 'ready' });
     } catch (error) {
-      setStatus({ kind: 'error', message: errorMessage(error) });
+      const message = errorMessage(error);
+      setStatus({ kind: 'error', message });
+      toast(message, 'error');
     }
   }
 
   /** Re-reads the stored IFC, e.g. for models uploaded before the extraction existed. */
   async function reextract() {
     try {
-      setNotice(null);
       const ifcBytes = new Uint8Array(await downloadModelFile(project.id, 'ifc'));
       await syncElements(ifcBytes);
       setStatus({ kind: 'ready' });
     } catch (error) {
-      setStatus({ kind: 'error', message: errorMessage(error) });
+      const message = errorMessage(error);
+      setStatus({ kind: 'error', message });
+      toast(message, 'error');
     }
   }
 
@@ -277,29 +296,14 @@ function ProjectView({
           </h1>
           {project.description && <p className="muted">{project.description}</p>}
           {project.files.ifc && (
-            <p className="meta">
-              Modelo: {project.files.ifc.fileName} ({formatBytes(project.files.ifc.sizeBytes)})
-            </p>
+            <div className="row">
+              <span className="chip">
+                {project.files.ifc.fileName} · {formatBytes(project.files.ifc.sizeBytes)}
+              </span>
+            </div>
           )}
         </div>
         <div className="header-actions">
-          {status.kind === 'ready' && (
-            <>
-              <button
-                type="button"
-                aria-pressed={coloring.enabled}
-                className="toggle"
-                onClick={() => coloring.setEnabled(!coloring.enabled)}
-              >
-                <LayersIcon />
-                Colores de avance
-              </button>
-              <button type="button" onClick={() => void viewer?.fitToModel()}>
-                <FrameIcon />
-                Encuadrar
-              </button>
-            </>
-          )}
           {!project.isDemo && (
             <ModelUpload
               onFile={(file) => void handleFile(file)}
@@ -312,20 +316,27 @@ function ProjectView({
 
       <ProgressRibbon counts={coloring.counts} compact />
 
-      {notice && (
-        <p className="notice" role="status">
-          {notice}
-          <button type="button" className="link-button" onClick={() => setNotice(null)}>
-            Cerrar
-          </button>
-        </p>
-      )}
-
       <div className="workspace">
         <div className="viewer-shell">
           <div ref={containerRef} className="viewer-canvas" />
           <ModelStatusOverlay status={status} />
           {coloring.enabled && status.kind === 'ready' && <StatusLegend />}
+          {status.kind === 'ready' && (
+            <div className="viewer-toolbar glass" role="toolbar" aria-label="Vista del modelo">
+              <button
+                type="button"
+                aria-pressed={coloring.enabled}
+                onClick={() => coloring.setEnabled(!coloring.enabled)}
+              >
+                <LayersIcon />
+                Colores de avance
+              </button>
+              <button type="button" onClick={() => void viewer?.fitToModel()}>
+                <FrameIcon />
+                Encuadrar
+              </button>
+            </div>
+          )}
         </div>
         <aside className="side-panel card">
           <h2>Propiedades</h2>
@@ -338,19 +349,8 @@ function ProjectView({
       </div>
 
       <section className="card tabs-card">
-        <div className="tabs" role="tablist">
-          {TABS.map(({ id, label }) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={tab === id}
-              className={tab === id ? 'active' : ''}
-              onClick={() => setTab(id)}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="tabs-bar">
+          <SegmentedTabs tabs={TABS} value={tab} onChange={setTab} label="Secciones del proyecto" />
           <div className="tabs-actions">
             {tab === 'quantities' && project.files.ifc && !project.isDemo && (
               <button type="button" onClick={() => void reextract()} disabled={busy}>

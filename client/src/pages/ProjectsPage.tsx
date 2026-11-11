@@ -3,7 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { createProject, deleteProject, listProjects } from '../api/projects';
 import { errorMessage, useAsync } from '../hooks/useAsync';
 import { formatBytes, formatDate, formatNumber } from '../format';
-import { TrashIcon } from '../components/Icon';
+import { ArrowRightIcon, BrandMark, TrashIcon } from '../components/Icon';
 import { Link } from '../components/Link';
 import { Loading } from '../components/Loading';
 import { navigate } from '../router';
@@ -28,7 +28,7 @@ function CreateProjectForm() {
   }
 
   return (
-    <form className="card form" onSubmit={handleSubmit}>
+    <form className="card form form-card" onSubmit={handleSubmit}>
       <h2>Nuevo proyecto</h2>
       <label>
         Nombre
@@ -78,6 +78,9 @@ function ProjectCard({ project, onDeleted }: { project: Project; onDeleted: () =
 
   return (
     <li className="project-card">
+      <span className="project-tile" aria-hidden="true">
+        <BrandMark size={24} />
+      </span>
       <div>
         <h2>
           <Link href={`/projects/${project.id}`}>{project.name}</Link>
@@ -85,19 +88,14 @@ function ProjectCard({ project, onDeleted }: { project: Project; onDeleted: () =
         </h2>
         {project.description && <p className="muted">{project.description}</p>}
         <ul className="project-facts">
-          <li>
-            Modelo{' '}
-            <strong>
-              {ifc ? `${ifc.fileName} · ${formatBytes(ifc.sizeBytes)}` : 'sin cargar'}
-            </strong>
+          <li className="chip">
+            {ifc ? `${ifc.fileName} · ${formatBytes(ifc.sizeBytes)}` : 'Sin modelo'}
           </li>
-          <li>
-            Creado <strong>{formatDate(project.createdAt)}</strong>
-          </li>
+          <li className="chip">Creado {formatDate(project.createdAt)}</li>
         </ul>
       </div>
-      {!project.isDemo && (
-        <div className="row-actions">
+      <div className="row-actions">
+        {!project.isDemo && (
           <button
             type="button"
             className="danger icon-only"
@@ -108,8 +106,9 @@ function ProjectCard({ project, onDeleted }: { project: Project; onDeleted: () =
           >
             <TrashIcon />
           </button>
-        </div>
-      )}
+        )}
+        <ArrowRightIcon className="card-arrow" size={18} />
+      </div>
     </li>
   );
 }
@@ -122,8 +121,13 @@ export function ProjectsPage() {
     <div className="projects-page">
       <section aria-labelledby="projects-title">
         <div className="page-head">
-          <h1 id="projects-title">Proyectos</h1>
-          {count !== null && count > 0 && <span className="count">{formatNumber(count)}</span>}
+          <div className="row">
+            <h1 id="projects-title">Proyectos</h1>
+            {count !== null && count > 0 && <span className="count">{formatNumber(count)}</span>}
+          </div>
+          <p>
+            Cada proyecto une su modelo IFC con las cantidades, el presupuesto y el avance de obra.
+          </p>
         </div>
         {state.status === 'loading' && <Loading text="Cargando proyectos…" />}
         {state.status === 'error' && (
@@ -136,6 +140,9 @@ export function ProjectsPage() {
         )}
         {state.status === 'success' && state.data.length === 0 && (
           <div className="card empty-state">
+            <span className="project-tile" aria-hidden="true">
+              <BrandMark size={24} />
+            </span>
             <p>
               Aún no hay proyectos. Crea uno con el formulario y sube su modelo IFC para obtener
               cantidades, presupuesto y avance.

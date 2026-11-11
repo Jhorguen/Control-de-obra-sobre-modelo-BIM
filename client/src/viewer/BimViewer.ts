@@ -44,11 +44,13 @@ export class BimViewer {
     this.world = worlds.create<OBC.SimpleScene, OBC.OrthoPerspectiveCamera, OBC.SimpleRenderer>();
     this.world.scene = new OBC.SimpleScene(this.components);
     this.world.scene.setup();
-    this.world.scene.three.background = new THREE.Color('#e9e7e1'); // --viewer ground in styles.css
+    // Transparent: the dark stage gradient of .viewer-shell (styles.css) shows through.
+    this.world.scene.three.background = null;
     this.world.renderer = new OBC.SimpleRenderer(this.components, container);
     this.world.camera = new OBC.OrthoPerspectiveCamera(this.components);
     this.components.init();
-    this.components.get(OBC.Grids).create(this.world);
+    // A quiet plan grid on the dark stage.
+    this.components.get(OBC.Grids).create(this.world).config.color = new THREE.Color('#56616c');
 
     this.fragments = this.components.get(OBC.FragmentsManager);
     this.fragments.init(fragmentsWorkerUrl);
@@ -75,7 +77,7 @@ export class BimViewer {
     this.highlighter.setup({
       world: this.world,
       selectMaterialDefinition: {
-        color: new THREE.Color('#2a74b8'), // blueprint blue, brighter for 3D
+        color: new THREE.Color('#3a8bd0'), // blueprint blue, bright enough on the dark stage
         opacity: 1,
         transparent: false,
         renderedFaces: 0,

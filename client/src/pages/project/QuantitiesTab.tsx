@@ -1,5 +1,6 @@
 import { getQuantities } from '../../api/elements';
 import { QuantitiesTable } from '../../components/QuantitiesTable';
+import { Skeleton } from '../../components/Skeleton';
 import { useAsync } from '../../hooks/useAsync';
 
 interface Props {
@@ -16,7 +17,7 @@ export function QuantitiesTab({ projectId, dataVersion, selectedGuids, onSelect 
     `${projectId}:${dataVersion}`,
   );
 
-  if (state.status === 'loading') return <p className="muted">Calculando cantidades…</p>;
+  if (state.status === 'loading') return <Skeleton label="Calculando cantidades" rows={8} />;
   if (state.status === 'error') {
     return (
       <div className="error-box card">

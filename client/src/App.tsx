@@ -3,6 +3,7 @@ import { HealthStatus } from './components/HealthStatus';
 import { BrandMark } from './components/Icon';
 import { Link } from './components/Link';
 import { Loading } from './components/Loading';
+import { Toaster } from './components/Toaster';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { matchRoute, usePathname } from './router';
 
@@ -19,7 +20,9 @@ export function App() {
     <div className="app">
       <header className="app-header">
         <Link href="/" className="brand">
-          <BrandMark />
+          <span className="brand-mark">
+            <BrandMark size={20} />
+          </span>
           Control de obra BIM
         </Link>
         <HealthStatus />
@@ -38,6 +41,7 @@ export function App() {
           </div>
         )}
       </main>
+      <Toaster />
     </div>
   );
 }

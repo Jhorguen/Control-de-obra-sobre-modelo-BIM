@@ -89,6 +89,33 @@ export const ChevronRightIcon = (p: IconProps) => (
   </Svg>
 );
 
+export const ArrowRightIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M5 12h14" />
+    <path d="m13 6 6 6-6 6" />
+  </Svg>
+);
+
+export const CheckIcon = (p: IconProps) => (
+  <Svg {...p} strokeWidth={2.5}>
+    <path d="m5 12.5 4.5 4.5L19 7.5" />
+  </Svg>
+);
+
+export const CloseIcon = (p: IconProps) => (
+  <Svg {...p} strokeWidth={2}>
+    <path d="M6 6l12 12M18 6 6 18" />
+  </Svg>
+);
+
+/** A pointer clicking: "select something in the model". */
+export const PointerIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="m9 9 5 12 1.8-5.2L21 14 9 9Z" />
+    <path d="M7.2 2.2 8 5.1M2.2 7.2l2.9.8M14.1 4.9 12 7M4.9 14.1 7 12" />
+  </Svg>
+);
+
 /** Brand mark: a building block on a plan grid (a BIM element). */
 export const BrandMark = ({ size = 22 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
