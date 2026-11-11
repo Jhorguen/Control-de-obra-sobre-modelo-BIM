@@ -30,7 +30,7 @@ function ElementHistory({ entry, dataVersion }: { entry: StatusMapEntry; dataVer
   );
   return (
     <div className="history">
-      <h4>Historial del elemento</h4>
+      <h2>Historial del elemento</h2>
       <p className="muted small">
         {/* Taken from the history itself (newest record first) so both always agree. */}
         Estado actual:{' '}
@@ -137,7 +137,7 @@ export function ProgressTab({
 
       <div className="progress-forms">
         <form className="item-form" onSubmit={handleRecord}>
-          <h4>Registrar avance</h4>
+          <h2>Registrar avance</h2>
           <fieldset className="status-options">
             <legend className="visually-hidden">Estado</legend>
             {progressStatusSchema.options.map((option) => (
@@ -165,7 +165,9 @@ export function ProgressTab({
               />
             </label>
             <label>
-              Nota <span className="muted">(opcional)</span>
+              <span>
+                Nota <span className="muted">(opcional)</span>
+              </span>
               <input
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
@@ -180,7 +182,7 @@ export function ProgressTab({
         </form>
 
         <div className="item-form">
-          <h4>Programación</h4>
+          <h2>Programación</h2>
           <p className="muted small">
             La fecha programada alimenta la línea "programado" de la curva S del tablero.
           </p>

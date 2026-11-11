@@ -1,4 +1,5 @@
 import type { ElementProperties } from '../viewer/itemProperties';
+import { ChevronRightIcon } from './Icon';
 
 interface Props {
   properties: ElementProperties | null;
@@ -6,11 +7,11 @@ interface Props {
   loading: boolean;
 }
 
-function Field({ label, value }: { label: string; value: string | null }) {
+function Field({ label, value, mono }: { label: string; value: string | null; mono?: boolean }) {
   return (
     <div className="field">
       <dt>{label}</dt>
-      <dd>{value ?? '—'}</dd>
+      <dd className={mono ? 'mono' : undefined}>{value ?? '—'}</dd>
     </div>
   );
 }
@@ -37,7 +38,7 @@ export function PropertiesPanel({ properties, selectedCount, loading }: Props) {
         <Field label="Nombre" value={properties.name} />
         <Field label="Tipo" value={properties.typeName} />
         <Field label="Nivel" value={properties.level} />
-        <Field label="GlobalId" value={properties.globalId} />
+        <Field label="GlobalId" value={properties.globalId} mono />
       </dl>
 
       {properties.groups.length === 0 && (
@@ -50,6 +51,7 @@ export function PropertiesPanel({ properties, selectedCount, loading }: Props) {
           open={group.kind === 'quantities' && group.standard}
         >
           <summary>
+            <ChevronRightIcon className="chevron" size={14} />
             {group.name}
             <span className="tag">
               {group.kind === 'quantities' ? 'Cantidades' : 'Propiedades'}

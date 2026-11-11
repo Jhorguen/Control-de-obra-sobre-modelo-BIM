@@ -2,7 +2,8 @@ import type { Project } from '@bim/shared';
 import { useState, type FormEvent } from 'react';
 import { createProject, deleteProject, listProjects } from '../api/projects';
 import { errorMessage, useAsync } from '../hooks/useAsync';
-import { formatDate } from '../format';
+import { formatBytes, formatDate, formatNumber } from '../format';
+import { TrashIcon } from '../components/Icon';
 import { Link } from '../components/Link';
 import { Loading } from '../components/Loading';
 import { navigate } from '../router';
@@ -73,25 +74,41 @@ function ProjectCard({ project, onDeleted }: { project: Project; onDeleted: () =
     }
   }
 
+  const ifc = project.files.ifc;
+
   return (
-    <li className="card project-card">
+    <li className="project-card">
       <div>
-        <h3>
+        <h2>
           <Link href={`/projects/${project.id}`}>{project.name}</Link>
           {project.isDemo && <span className="tag">Demo</span>}
-        </h3>
+        </h2>
         {project.description && <p className="muted">{project.description}</p>}
-        <p className="meta">
-          Creado el {formatDate(project.createdAt)} ·{' '}
-          {project.files.frag
-            ? `Modelo: ${project.files.ifc?.fileName ?? 'cargado'}`
-            : 'Sin modelo'}
-        </p>
+        <ul className="project-facts">
+          <li>
+            Modelo{' '}
+            <strong>
+              {ifc ? `${ifc.fileName} · ${formatBytes(ifc.sizeBytes)}` : 'sin cargar'}
+            </strong>
+          </li>
+          <li>
+            Creado <strong>{formatDate(project.createdAt)}</strong>
+          </li>
+        </ul>
       </div>
       {!project.isDemo && (
-        <button type="button" className="danger" onClick={handleDelete} disabled={deleting}>
-          {deleting ? 'Eliminando…' : 'Eliminar'}
-        </button>
+        <div className="row-actions">
+          <button
+            type="button"
+            className="danger icon-only"
+            onClick={handleDelete}
+            disabled={deleting}
+            aria-label={`Eliminar el proyecto ${project.name}`}
+            title="Eliminar proyecto"
+          >
+            <TrashIcon />
+          </button>
+        </div>
       )}
     </li>
   );
@@ -99,11 +116,15 @@ function ProjectCard({ project, onDeleted }: { project: Project; onDeleted: () =
 
 export function ProjectsPage() {
   const { state, reload } = useAsync(listProjects, 'projects');
+  const count = state.status === 'success' ? state.data.length : null;
 
   return (
     <div className="projects-page">
-      <section>
-        <h2 className="section-title">Proyectos</h2>
+      <section aria-labelledby="projects-title">
+        <div className="page-head">
+          <h1 id="projects-title">Proyectos</h1>
+          {count !== null && count > 0 && <span className="count">{formatNumber(count)}</span>}
+        </div>
         {state.status === 'loading' && <Loading text="Cargando proyectos…" />}
         {state.status === 'error' && (
           <div className="card error-box">
@@ -114,7 +135,12 @@ export function ProjectsPage() {
           </div>
         )}
         {state.status === 'success' && state.data.length === 0 && (
-          <p className="card muted">Aún no hay proyectos. Crea el primero con el formulario.</p>
+          <div className="card empty-state">
+            <p>
+              Aún no hay proyectos. Crea uno con el formulario y sube su modelo IFC para obtener
+              cantidades, presupuesto y avance.
+            </p>
+          </div>
         )}
         {state.status === 'success' && state.data.length > 0 && (
           <ul className="project-list">

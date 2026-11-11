@@ -25,9 +25,9 @@ function LeftOutGroup({
   return (
     <div className={`left-out card ${group.count > 0 ? 'warn' : ''}`}>
       <div className="row space-between">
-        <h4>
+        <h2>
           {title} ({formatNumber(group.count)})
-        </h4>
+        </h2>
         {group.count > 0 && (
           <button type="button" onClick={() => onSelect(group.globalIds)}>
             Ver en el modelo

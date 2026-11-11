@@ -44,7 +44,7 @@ export class BimViewer {
     this.world = worlds.create<OBC.SimpleScene, OBC.OrthoPerspectiveCamera, OBC.SimpleRenderer>();
     this.world.scene = new OBC.SimpleScene(this.components);
     this.world.scene.setup();
-    this.world.scene.three.background = new THREE.Color('#eef1f5');
+    this.world.scene.three.background = new THREE.Color('#e9e7e1'); // --viewer ground in styles.css
     this.world.renderer = new OBC.SimpleRenderer(this.components, container);
     this.world.camera = new OBC.OrthoPerspectiveCamera(this.components);
     this.components.init();
@@ -75,7 +75,7 @@ export class BimViewer {
     this.highlighter.setup({
       world: this.world,
       selectMaterialDefinition: {
-        color: new THREE.Color('#1f5fbf'),
+        color: new THREE.Color('#2a74b8'), // blueprint blue, brighter for 3D
         opacity: 1,
         transparent: false,
         renderedFaces: 0,

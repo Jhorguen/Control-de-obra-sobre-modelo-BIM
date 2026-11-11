@@ -2,8 +2,10 @@ import { MAX_MODEL_FILE_BYTES, type BulkElementsResult, type Project } from '@bi
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { uploadElements } from '../api/elements';
 import { downloadModelFile, getProject, uploadModelFile } from '../api/projects';
+import { ArrowLeftIcon, FrameIcon, LayersIcon, RefreshIcon, UploadIcon } from '../components/Icon';
 import { Link } from '../components/Link';
 import { Loading } from '../components/Loading';
+import { ProgressRibbon } from '../components/ProgressRibbon';
 import { PropertiesPanel } from '../components/PropertiesPanel';
 import { formatBytes, formatNumber } from '../format';
 import { errorMessage, useAsync } from '../hooks/useAsync';
@@ -12,7 +14,6 @@ import type { BimViewer } from '../viewer/BimViewer';
 import { extractFromIfc } from '../viewer/extractInBrowser';
 import { getStatusMap } from '../api/progress';
 import { groupGuidsByStatus, STATUS_LABELS } from '../progressLabels';
-import { STATUS_COLORS } from '../viewer/BimViewer';
 import { useBimViewer } from '../viewer/useBimViewer';
 import { BudgetTab } from './project/BudgetTab';
 import { DashboardTab } from './project/DashboardTab';
@@ -94,6 +95,7 @@ function ModelUpload({
   };
   return (
     <label className={`button-like primary ${disabled ? 'disabled' : ''}`}>
+      <UploadIcon />
       {label}
       <input type="file" accept=".ifc" onChange={handleChange} disabled={disabled} hidden />
     </label>
@@ -142,7 +144,7 @@ function StatusLegend() {
     <ul className="viewer-legend" aria-label="Colores por estado">
       {(['PENDING', 'IN_PROGRESS', 'DONE'] as const).map((s) => (
         <li key={s}>
-          <span className="swatch" style={{ background: STATUS_COLORS[s] }} aria-hidden="true" />
+          <span className={`swatch status-${s}`} aria-hidden="true" />
           {STATUS_LABELS[s]}
         </li>
       ))}
@@ -170,7 +172,16 @@ function useStatusColoring(
     else void viewer.clearStatusColors();
   }, [viewer, modelReady, enabled, entries]);
 
-  return { enabled, setEnabled, entries: entries ?? [] };
+  // Progress is measured on elements with a budget item (same scope as the dashboard).
+  const counts = { done: 0, inProgress: 0, pending: 0 };
+  for (const entry of entries ?? []) {
+    if (!entry.hasBudgetItem) continue;
+    if (entry.status === 'DONE') counts.done++;
+    else if (entry.status === 'IN_PROGRESS') counts.inProgress++;
+    else counts.pending++;
+  }
+
+  return { enabled, setEnabled, entries: entries ?? [], counts };
 }
 
 function ProjectView({
@@ -255,14 +266,15 @@ function ProjectView({
   return (
     <div className="project-page">
       <header className="project-header">
-        <div>
+        <div className="project-title">
           <Link href="/" className="back-link">
-            ← Proyectos
+            <ArrowLeftIcon />
+            Proyectos
           </Link>
-          <h2>
+          <h1>
             {project.name}
             {project.isDemo && <span className="tag">Demo</span>}
-          </h2>
+          </h1>
           {project.description && <p className="muted">{project.description}</p>}
           {project.files.ifc && (
             <p className="meta">
@@ -276,12 +288,14 @@ function ProjectView({
               <button
                 type="button"
                 aria-pressed={coloring.enabled}
-                className={coloring.enabled ? 'toggle on' : 'toggle'}
+                className="toggle"
                 onClick={() => coloring.setEnabled(!coloring.enabled)}
               >
-                {coloring.enabled ? 'Quitar colores de avance' : 'Colorear por avance'}
+                <LayersIcon />
+                Colores de avance
               </button>
               <button type="button" onClick={() => void viewer?.fitToModel()}>
+                <FrameIcon />
                 Encuadrar
               </button>
             </>
@@ -295,6 +309,8 @@ function ProjectView({
           )}
         </div>
       </header>
+
+      <ProgressRibbon counts={coloring.counts} compact />
 
       {notice && (
         <p className="notice" role="status">
@@ -312,7 +328,7 @@ function ProjectView({
           {coloring.enabled && status.kind === 'ready' && <StatusLegend />}
         </div>
         <aside className="side-panel card">
-          <h3>Propiedades</h3>
+          <h2>Propiedades</h2>
           <PropertiesPanel
             properties={selection.properties}
             selectedCount={selection.guids.length}
@@ -338,6 +354,7 @@ function ProjectView({
           <div className="tabs-actions">
             {tab === 'quantities' && project.files.ifc && !project.isDemo && (
               <button type="button" onClick={() => void reextract()} disabled={busy}>
+                <RefreshIcon />
                 Volver a extraer cantidades
               </button>
             )}

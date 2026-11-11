@@ -17,6 +17,7 @@ import {
   updateBudgetItem,
 } from '../../api/budget';
 import { quantityRule, SOURCE_LABELS, UNIT_LABELS } from '../../budgetLabels';
+import { PencilIcon, TrashIcon } from '../../components/Icon';
 import { formatCOP, formatNumber } from '../../format';
 import { errorMessage, useAsync } from '../../hooks/useAsync';
 
@@ -106,14 +107,14 @@ function BudgetItemForm({
 
   return (
     <form className="item-form" onSubmit={handleSubmit}>
-      <h4>{item ? `Editar ítem ${item.code}` : 'Nuevo ítem'}</h4>
+      <h2>{item ? `Editar ítem ${item.code}` : 'Nuevo ítem'}</h2>
       <div className="form-grid">
         <label>
           Código
           <input
             value={form.code}
             onChange={(e) => set('code', e.target.value)}
-            placeholder="2.1"
+            placeholder="Ej. 2.1"
           />
         </label>
         <label className="span-3">
@@ -121,7 +122,7 @@ function BudgetItemForm({
           <input
             value={form.description}
             onChange={(e) => set('description', e.target.value)}
-            placeholder="Concreto 3000 psi para muros"
+            placeholder="Ej. Concreto 3000 psi para muros"
           />
         </label>
         <label>
@@ -165,7 +166,7 @@ function BudgetItemForm({
             min="0"
             value={form.unitPrice}
             onChange={(e) => set('unitPrice', e.target.value)}
-            placeholder="450000"
+            placeholder="Ej. 450000"
           />
         </label>
       </div>
@@ -347,16 +348,26 @@ export function ItemsTab({ projectId, dataVersion, selectedGuids, onDataChanged 
                   <td>{quantityRule(item.quantitySource, item.factor)}</td>
                   <td className="num">{formatCOP(item.unitPrice)}</td>
                   <td className="actions">
-                    <button type="button" onClick={() => setEditing(item)}>
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      className="danger"
-                      onClick={() => void handleDelete(item)}
-                    >
-                      Eliminar
-                    </button>
+                    <div className="row">
+                      <button
+                        type="button"
+                        className="icon-only"
+                        onClick={() => setEditing(item)}
+                        aria-label={`Editar el ítem ${item.code}`}
+                        title="Editar"
+                      >
+                        <PencilIcon />
+                      </button>
+                      <button
+                        type="button"
+                        className="danger icon-only"
+                        onClick={() => void handleDelete(item)}
+                        aria-label={`Eliminar el ítem ${item.code}`}
+                        title="Eliminar"
+                      >
+                        <TrashIcon />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

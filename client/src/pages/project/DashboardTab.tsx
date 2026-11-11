@@ -21,14 +21,13 @@ import {
   formatPercent,
 } from '../../format';
 import { useAsync } from '../../hooks/useAsync';
-import { STATUS_LABELS } from '../../progressLabels';
-import { STATUS_COLORS } from '../../viewer/BimViewer';
 
 // Chart styling follows the data-viz rules used across the app: two categorical slots
 // validated for color-vision deficiency (blue, orange), thin marks, recessive grid and
 // axes, a legend for every multi-series chart, hover tooltips and a data table.
 const SERIES = { first: '#2a78d6', second: '#eb6834' };
-const INK = { text: '#1d2433', muted: '#898781', grid: '#e1e0d9', axis: '#c3c2b7' };
+// Chart chrome from the app's tokens (styles.css): ink, muted ink, hairline, baseline.
+const INK = { text: '#1d2125', muted: '#5f666d', grid: '#dedbd4', axis: '#c9c5bc' };
 const axisProps = {
   tick: { fill: INK.muted, fontSize: 12 },
   axisLine: { stroke: INK.axis },
@@ -74,48 +73,28 @@ interface Props {
   dataVersion: number;
 }
 
-function Kpi({ label, value, detail }: { label: string; value: string; detail: string }) {
+function Kpi({
+  label,
+  value,
+  detail,
+  meter,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  /** Ratio drawn under the value, in the color of its series in the charts. */
+  meter?: { ratio: number; color: string };
+}) {
   return (
     <div className="kpi">
       <span className="kpi-label">{label}</span>
       <span className="kpi-value">{value}</span>
+      {meter && (
+        <div className="kpi-meter" aria-hidden="true">
+          <span style={{ width: `${Math.min(1, meter.ratio) * 100}%`, background: meter.color }} />
+        </div>
+      )}
       <span className="kpi-detail">{detail}</span>
-    </div>
-  );
-}
-
-function StatusBar({ counts }: { counts: ProgressSummary['counts'] }) {
-  const total = counts.withItem || 1;
-  const parts = [
-    ['DONE', counts.done],
-    ['IN_PROGRESS', counts.inProgress],
-    ['PENDING', counts.pending],
-  ] as const;
-  return (
-    <div className="status-bar-wrap">
-      <div className="status-bar" role="img" aria-label="Elementos por estado">
-        {parts.map(([status, n]) =>
-          n > 0 ? (
-            <span
-              key={status}
-              style={{ width: `${(n / total) * 100}%`, background: STATUS_COLORS[status] }}
-              title={`${STATUS_LABELS[status]}: ${n}`}
-            />
-          ) : null,
-        )}
-      </div>
-      <ul className="inline-list">
-        {parts.map(([status, n]) => (
-          <li key={status}>
-            <span
-              className="swatch"
-              style={{ background: STATUS_COLORS[status] }}
-              aria-hidden="true"
-            />
-            {STATUS_LABELS[status]}: {formatNumber(n)}
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
@@ -151,6 +130,7 @@ function LevelChart({ summary }: { summary: ProgressSummary }) {
             name="Físico (elementos)"
             fill={SERIES.first}
             radius={[4, 4, 0, 0]}
+            isAnimationActive={false}
             maxBarSize={40}
           />
           <Bar
@@ -158,6 +138,7 @@ function LevelChart({ summary }: { summary: ProgressSummary }) {
             name="Financiero (valor)"
             fill={SERIES.second}
             radius={[4, 4, 0, 0]}
+            isAnimationActive={false}
             maxBarSize={40}
           />
         </BarChart>
@@ -243,6 +224,7 @@ function SCurve({ summary }: { summary: ProgressSummary }) {
               name="Programado"
               stroke={SERIES.first}
               strokeWidth={2}
+              isAnimationActive={false}
               strokeDasharray="6 4"
               dot={{ r: 4, strokeDasharray: '' }}
               activeDot={{ r: 5 }}
@@ -254,6 +236,7 @@ function SCurve({ summary }: { summary: ProgressSummary }) {
             name="Ejecutado"
             stroke={SERIES.second}
             strokeWidth={2}
+            isAnimationActive={false}
             dot={{ r: 4 }}
             activeDot={{ r: 5 }}
           />
@@ -326,11 +309,13 @@ export function DashboardTab({ projectId, dataVersion }: Props) {
         <Kpi
           label="Avance físico"
           value={formatPercent(summary.physicalProgress)}
+          meter={{ ratio: summary.physicalProgress, color: SERIES.first }}
           detail={`${formatNumber(summary.counts.done)} de ${formatNumber(summary.counts.withItem)} elementos ejecutados`}
         />
         <Kpi
           label="Avance financiero"
           value={formatPercent(summary.financialProgress)}
+          meter={{ ratio: summary.financialProgress, color: SERIES.second }}
           detail={`${formatCOP(summary.executedValue)} ejecutados`}
         />
         <Kpi
@@ -344,7 +329,6 @@ export function DashboardTab({ projectId, dataVersion }: Props) {
           detail="elementos (no suman al valor ejecutado hasta terminarse)"
         />
       </div>
-      <StatusBar counts={summary.counts} />
       <p className="muted small">
         Físico = elementos ejecutados / elementos con ítem. Financiero = valor ejecutado /
         presupuesto. Si difieren, se está avanzando más en lo barato o en lo caro.

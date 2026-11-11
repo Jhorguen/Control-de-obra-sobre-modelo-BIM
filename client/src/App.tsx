@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { HealthStatus } from './components/HealthStatus';
+import { BrandMark } from './components/Icon';
 import { Link } from './components/Link';
 import { Loading } from './components/Loading';
 import { ProjectsPage } from './pages/ProjectsPage';
@@ -18,6 +19,7 @@ export function App() {
     <div className="app">
       <header className="app-header">
         <Link href="/" className="brand">
+          <BrandMark />
           Control de obra BIM
         </Link>
         <HealthStatus />
