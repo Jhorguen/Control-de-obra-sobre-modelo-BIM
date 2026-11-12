@@ -113,7 +113,7 @@ npm run dev                       # API on :3000 and frontend on http://localhos
 | `npm run build`                      | Builds the three packages                                     |
 | `npm run db:seed -w @bim/server`     | Resets the demo project                                       |
 
-**Tests (95):** extraction against two real IFC files, whose values were checked by reading the STEP text directly; unit conversion; quantity grouping; budget and progress calculations (pure functions); the API against a test database; and the translation dictionaries. GitHub Actions runs formatting, lint, types, tests and build on every push.
+**Tests (95):** extraction against two real IFC files, whose values were checked by reading the STEP text directly; unit conversion; quantity grouping; budget and progress calculations (pure functions); the API against a test database; and the translation dictionaries. GitHub Actions runs formatting, lint, types, tests and build on every push to `main` and on every pull request.
 
 ## Project structure
 
@@ -130,7 +130,7 @@ docs/     Deployment guide and images
 - Quantities depend on the IFC including them ("Export base quantities" in Revit or ArchiCAD). Computing them from geometry when they are missing is the natural next step.
 - One model per project; no federation of disciplines (architecture + structure).
 - Progress is recorded per whole element. There is no partial progress (e.g. 50% of a slab).
-- No authentication or roles (site engineer / project manager). The demo project is protected against deletion and model replacement, but its items and progress can be edited; `npm run db:seed` resets it.
+- No authentication or roles (site engineer / project manager). The demo project is protected against deletion and model replacement, but its items and progress can be edited; `npm run db:seed -w @bim/server` resets it.
 - The demo data (project name, budget items) is in Spanish, as a Colombian project would be.
 - The free hosting plan stops the API after some minutes without use: the first visit takes up to a minute and the interface says so.
 - Next steps: breakdown of unit prices by inputs, exporting budget and quantities to Excel/CSV, and partial progress.

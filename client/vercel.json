@@ -4,7 +4,9 @@
   "installCommand": "cd .. && npm ci --include=dev",
   "buildCommand": "cd .. && npm run build -w @bim/shared && npm run build -w @bim/client",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "rewrites": [
+    { "source": "/((?!samples/|assets/|wasm/|fonts/).*)", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/samples/(.*)",
