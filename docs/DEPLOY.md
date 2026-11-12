@@ -29,7 +29,7 @@ DATABASE_URL="postgresql://…neon.tech/neondb?sslmode=require" npm run db:seed 
 ## 3. Frontend en Vercel
 
 1. En [vercel.com](https://vercel.com): **Add New → Project** e importa el repositorio.
-2. **Root Directory**: `client`. Vercel detecta Vite y usa [`client/vercel.json`](../client/vercel.json).
+2. **Root Directory**: `client` (si Vercel propone un proyecto multiservicio, elige **Import single project** en `client`). [`client/vercel.json`](../client/vercel.json) instala y compila desde la raíz del monorepo, porque el cliente depende de `@bim/shared` y de TypeScript, que están fuera de `client`.
 3. Variable de entorno `VITE_API_URL` = URL de Render, sin `/api` (p. ej. `https://control-obra-bim-api.onrender.com`).
 4. Despliega y vuelve al paso 2 para poner esta URL en `CORS_ORIGINS`.
 
