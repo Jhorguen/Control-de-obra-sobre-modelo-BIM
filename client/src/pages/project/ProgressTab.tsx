@@ -45,7 +45,7 @@ function ElementHistory({ entry, dataVersion }: { entry: StatusMapEntry; dataVer
         )}
       </p>
       {state.status === 'loading' && <p className="muted small">{t('progress.historyLoading')}</p>}
-      {state.status === 'error' && <p className="error-text small">{state.error}</p>}
+      {state.status === 'error' && <p className="error-text small">{errorMessage(state.error)}</p>}
       {state.status === 'success' && state.data.length === 0 && (
         <p className="muted small">{t('progress.noRecords')}</p>
       )}

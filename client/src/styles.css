@@ -977,6 +977,8 @@ select:focus-visible {
   box-shadow:
     0 0 0 1px rgb(22 25 28 / 0.4),
     var(--shadow-lg);
+  /* The floating chrome adapts to the stage's width, not the window's */
+  container: stage / inline-size;
 }
 
 .viewer-canvas {
@@ -1001,6 +1003,9 @@ select:focus-visible {
   top: 14px;
   right: 14px;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: calc(100% - 28px);
   gap: 4px;
   padding: 4px;
   border-radius: 12px;
@@ -1086,6 +1091,16 @@ select:focus-visible {
   @starting-style {
     opacity: 0;
     transform: translateY(-6px);
+  }
+}
+
+/* On a narrow stage the toolbar can take the whole top edge: the legend moves down */
+@container stage (max-width: 600px) {
+  .viewer-legend {
+    top: auto;
+    left: auto;
+    right: 14px;
+    bottom: 14px;
   }
 }
 
@@ -1453,6 +1468,11 @@ select:focus-visible {
 .data-table tbody tr:last-child td,
 .data-table tbody tr:last-child th {
   border-bottom: none;
+}
+
+/* scrollIntoView (a pick in the model) keeps the row clear of the sticky header and total */
+.data-table tbody tr {
+  scroll-margin-block: 56px;
 }
 
 .data-table .class-row {
@@ -1965,9 +1985,11 @@ select:focus-visible {
     min-height: 40px;
   }
 
-  /* The 3px track around it brings the language buttons to a 42px target */
+  /* App-bar controls meet the same 44px target (the group fits the 60px bar) */
+  .status-pill,
   .lang-switch button {
-    min-height: 36px;
+    min-height: 44px;
+    min-width: 44px;
   }
 }
 
@@ -1975,10 +1997,6 @@ select:focus-visible {
 @media (max-width: 560px) {
   .header-tools {
     gap: 8px;
-  }
-
-  .status-pill {
-    padding: 0 12px;
   }
 
   .status-pill .status-label {
@@ -2063,7 +2081,7 @@ select:focus-visible {
     min-height: calc(100dvh - 92px);
   }
 
-  /* The chart data tables (inside <details>) keep their own scroll box */
+  /* The chart data tables ("Show data", inside <details>) keep their own scroll box */
   .workbench .table-scroll:not(details .table-scroll) {
     max-height: none;
     overflow: visible;
@@ -2071,6 +2089,10 @@ select:focus-visible {
 
   .workbench .data-table thead th {
     top: 60px;
+  }
+
+  .workbench details .data-table thead th {
+    top: 0;
   }
 
   .workbench .data-table thead th:first-child {
@@ -2101,7 +2123,7 @@ select:focus-visible {
   }
 
   /* That box is now the header row's scroll container: the app-bar offset no longer applies */
-  .workbench .data-table thead th {
+  .workbench .table-scroll .data-table thead th {
     top: 0;
   }
 }

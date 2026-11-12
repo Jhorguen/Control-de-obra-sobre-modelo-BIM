@@ -3,7 +3,14 @@ import { ApiError } from '../api/http';
 import { getLanguage, isMessageKey, t } from '../i18n/core';
 
 export type AsyncState<T> =
-  { status: 'loading' } | { status: 'success'; data: T } | { status: 'error'; error: string };
+  | { status: 'loading' }
+  | { status: 'success'; data: T }
+  /** The raw error: render it with errorMessage() so it follows the language. */
+  | { status: 'error'; error: unknown };
+
+/** Codes the client creates itself: their text always comes from the dictionary. */
+const CLIENT_CODES = new Set(['NETWORK_ERROR', 'UNEXPECTED_RESPONSE', 'INVALID_RESPONSE']);
+const logged = new WeakSet<object>();
 
 /**
  * Text for an error, in the interface language. API messages are written in Spanish and
@@ -12,12 +19,17 @@ export type AsyncState<T> =
  */
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    if (getLanguage() === 'es') return error.message;
     const key = `errors.${error.code}`;
-    return isMessageKey(key) ? t(key, { status: error.status }) : error.message;
+    const known = isMessageKey(key);
+    if (getLanguage() === 'es' && !CLIENT_CODES.has(error.code)) return error.message;
+    return known ? t(key, { status: error.status }) : error.message;
   }
-  // Unexpected (non-API) errors are logged so they can be diagnosed from the console.
-  console.error(error);
+  // Unexpected (non-API) errors are logged once so they can be diagnosed from the console;
+  // this function also runs on every render of an error box.
+  if (typeof error === 'object' && error !== null && !logged.has(error)) {
+    logged.add(error);
+    console.error(error);
+  }
   return t('errors.unexpected');
 }
 
@@ -39,7 +51,7 @@ export function useAsync<T>(loader: (signal: AbortSignal) => Promise<T>, key: st
         if (!controller.signal.aborted) setState({ status: 'success', data });
       },
       (error: unknown) => {
-        if (!controller.signal.aborted) setState({ status: 'error', error: errorMessage(error) });
+        if (!controller.signal.aborted) setState({ status: 'error', error });
       },
     );
     return () => controller.abort();

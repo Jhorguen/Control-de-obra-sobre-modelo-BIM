@@ -8,7 +8,7 @@ import { useI18n } from '../i18n/useI18n';
 type HealthState =
   | { kind: 'loading' }
   | { kind: 'success'; health: HealthResponse }
-  | { kind: 'error'; message: string };
+  | { kind: 'error'; error: unknown };
 
 function useHealth() {
   const [state, setState] = useState<HealthState>({ kind: 'loading' });
@@ -19,7 +19,7 @@ function useHealth() {
     fetchHealth(controller.signal).then(
       (health) => setState({ kind: 'success', health }),
       (error: unknown) => {
-        if (!controller.signal.aborted) setState({ kind: 'error', message: errorMessage(error) });
+        if (!controller.signal.aborted) setState({ kind: 'error', error });
       },
     );
     // Abort on unmount or retry so a stale response never overwrites a newer one.
@@ -51,7 +51,7 @@ export function HealthStatus() {
   } else if (state.kind === 'error') {
     tone = 'error';
     label = t('health.down');
-    detail = state.message;
+    detail = errorMessage(state.error);
   }
 
   return (

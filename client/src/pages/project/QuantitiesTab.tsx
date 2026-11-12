@@ -1,7 +1,7 @@
 import { getQuantities } from '../../api/elements';
 import { QuantitiesTable } from '../../components/QuantitiesTable';
 import { Skeleton } from '../../components/Skeleton';
-import { useAsync } from '../../hooks/useAsync';
+import { errorMessage, useAsync } from '../../hooks/useAsync';
 import { useI18n } from '../../i18n/useI18n';
 
 interface Props {
@@ -23,7 +23,7 @@ export function QuantitiesTab({ projectId, dataVersion, selectedGuids, onSelect 
   if (state.status === 'error') {
     return (
       <div className="error-box card">
-        <p>{state.error}</p>
+        <p>{errorMessage(state.error)}</p>
         <button type="button" onClick={reload}>
           {t('common.retry')}
         </button>

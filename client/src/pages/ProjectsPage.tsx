@@ -14,7 +14,7 @@ function CreateProjectForm() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -24,7 +24,7 @@ function CreateProjectForm() {
       const project = await createProject({ name, description: description || undefined });
       navigate(`/projects/${project.id}`);
     } catch (err) {
-      setError(errorMessage(err));
+      setError(err);
       setSaving(false);
     }
   }
@@ -53,7 +53,7 @@ function CreateProjectForm() {
           maxLength={1000}
         />
       </label>
-      {error && <p className="error-text">{error}</p>}
+      {error !== null && <p className="error-text">{errorMessage(error)}</p>}
       <button type="submit" className="primary" disabled={saving || !name.trim()}>
         {saving ? t('projects.creating') : t('projects.create')}
       </button>
@@ -134,7 +134,7 @@ export function ProjectsPage() {
         {state.status === 'loading' && <Loading text={t('projects.loading')} />}
         {state.status === 'error' && (
           <div className="card error-box">
-            <p>{state.error}</p>
+            <p>{errorMessage(state.error)}</p>
             <button type="button" onClick={reload}>
               {t('common.retry')}
             </button>

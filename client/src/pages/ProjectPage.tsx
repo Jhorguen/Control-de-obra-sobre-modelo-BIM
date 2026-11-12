@@ -18,7 +18,7 @@ import { toast } from '../toast';
 import { PropertiesPanel } from '../components/PropertiesPanel';
 import { formatBytes, formatNumber } from '../format';
 import { errorMessage, useAsync } from '../hooks/useAsync';
-import { tp } from '../i18n/core';
+import { t, tp } from '../i18n/core';
 import { useI18n } from '../i18n/useI18n';
 import { useModelSelection } from '../hooks/useModelSelection';
 import type { BimViewer } from '../viewer/BimViewer';
@@ -39,7 +39,24 @@ type ModelStatus =
   | { kind: 'extracting' }
   | { kind: 'uploading' }
   | { kind: 'ready' }
-  | { kind: 'error'; message: string };
+  | { kind: 'error'; problem: ModelProblem };
+
+/** What went wrong, kept as data so the overlay text follows the interface language. */
+type ModelProblem =
+  | { error: unknown }
+  | { key: 'project.error.extension' }
+  | { key: 'project.error.tooLarge'; size: number };
+
+function describeProblem(problem: ModelProblem): string {
+  if ('error' in problem) return errorMessage(problem.error);
+  if (problem.key === 'project.error.tooLarge') {
+    return t(problem.key, {
+      size: formatBytes(problem.size),
+      max: formatBytes(MAX_MODEL_FILE_BYTES),
+    });
+  }
+  return t(problem.key);
+}
 
 /** Loads the stored Fragments model into the viewer whenever the project or viewer changes. */
 function useStoredModel(viewer: BimViewer | null, project: Project) {
@@ -66,7 +83,7 @@ function useStoredModel(viewer: BimViewer | null, project: Project) {
         shown.current = { viewer, version: fragUploadedAt };
         setStatus({ kind: 'ready' });
       } catch (error) {
-        if (!controller.signal.aborted) setStatus({ kind: 'error', message: errorMessage(error) });
+        if (!controller.signal.aborted) setStatus({ kind: 'error', problem: { error } });
       }
     };
     void load();
@@ -156,7 +173,7 @@ function ModelStatusOverlay({ status }: { status: ModelStatus }) {
     case 'empty':
       return <OverlayCard text={t('project.overlay.empty')} />;
     case 'error':
-      return <OverlayCard text={status.message} error />;
+      return <OverlayCard text={describeProblem(status.problem)} error />;
     case 'ready':
       return null;
   }
@@ -220,6 +237,7 @@ function ProjectView({
   onProjectChange: (p: Project) => void;
 }) {
   const { viewer, containerRef } = useBimViewer();
+  const fitButton = useRef<HTMLButtonElement>(null);
   const { t } = useI18n();
   const { status, setStatus, markShown } = useStoredModel(viewer, project);
   const selection = useModelSelection(viewer);
@@ -241,17 +259,11 @@ function ProjectView({
   async function handleFile(file: File) {
     if (!viewer) return;
     if (!file.name.toLowerCase().endsWith('.ifc')) {
-      setStatus({ kind: 'error', message: t('project.error.extension') });
+      setStatus({ kind: 'error', problem: { key: 'project.error.extension' } });
       return;
     }
     if (file.size > MAX_MODEL_FILE_BYTES) {
-      setStatus({
-        kind: 'error',
-        message: t('project.error.tooLarge', {
-          size: formatBytes(file.size),
-          max: formatBytes(MAX_MODEL_FILE_BYTES),
-        }),
-      });
+      setStatus({ kind: 'error', problem: { key: 'project.error.tooLarge', size: file.size } });
       return;
     }
     try {
@@ -273,9 +285,8 @@ function ProjectView({
       await syncElements(ifcBytes);
       setStatus({ kind: 'ready' });
     } catch (error) {
-      const message = errorMessage(error);
-      setStatus({ kind: 'error', message });
-      toast(message, 'error');
+      setStatus({ kind: 'error', problem: { error } });
+      toast(errorMessage(error), 'error');
     }
   }
 
@@ -286,9 +297,8 @@ function ProjectView({
       await syncElements(ifcBytes);
       setStatus({ kind: 'ready' });
     } catch (error) {
-      const message = errorMessage(error);
-      setStatus({ kind: 'error', message });
-      toast(message, 'error');
+      setStatus({ kind: 'error', problem: { error } });
+      toast(errorMessage(error), 'error');
     }
   }
 
@@ -350,12 +360,18 @@ function ProjectView({
                   <LayersIcon />
                   {t('project.toolbar.colors')}
                 </button>
-                <button type="button" onClick={() => void viewer?.fitToModel()}>
+                <button type="button" ref={fitButton} onClick={() => void viewer?.fitToModel()}>
                   <FrameIcon />
                   {t('project.toolbar.fit')}
                 </button>
                 {selection.guids.length > 0 && (
-                  <button type="button" onClick={() => void viewer?.clearSelection()}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      fitButton.current?.focus(); // this button unmounts with the selection
+                      void viewer?.clearSelection();
+                    }}
+                  >
                     <CloseIcon />
                     {t('project.toolbar.clear')}
                   </button>
@@ -441,7 +457,7 @@ export function ProjectPage({ id }: { id: number }) {
   if (state.status === 'error') {
     return (
       <div className="card error-box">
-        <p>{state.error}</p>
+        <p>{errorMessage(state.error)}</p>
         <div className="row">
           <button type="button" onClick={reload}>
             {t('common.retry')}

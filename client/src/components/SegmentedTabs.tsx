@@ -36,8 +36,11 @@ export function SegmentedTabs<T extends string>({ tabs, value, onChange, label }
     } else {
       place();
     }
+    // The tabs too: a label change (e.g. switching language) resizes them even when the
+    // list itself keeps its width because it scrolls sideways.
     const observer = new ResizeObserver(place);
     observer.observe(list);
+    for (const tab of list.querySelectorAll('[role="tab"]')) observer.observe(tab);
     return () => observer.disconnect();
   }, [value]);
 

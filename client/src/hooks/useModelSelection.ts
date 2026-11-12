@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import type { ItemData } from '@thatopen/fragments';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useI18n } from '../i18n/useI18n';
 import type { BimViewer } from '../viewer/BimViewer';
 import { toElementProperties, type ElementProperties } from '../viewer/itemProperties';
 
@@ -12,8 +14,10 @@ export interface ModelSelection {
 
 /** Follows what is selected in the 3D model (by click or by selectByGuids). */
 export function useModelSelection(viewer: BimViewer | null): ModelSelection {
+  const { language } = useI18n();
   const [guids, setGuids] = useState<string[]>([]);
-  const [properties, setProperties] = useState<ElementProperties | null>(null);
+  // The raw item, not its formatted properties: values are formatted per language below.
+  const [item, setItem] = useState<{ localId: number; data: ItemData } | null>(null);
   const [loadingProperties, setLoadingProperties] = useState(false);
   const requestId = useRef(0);
 
@@ -24,7 +28,7 @@ export function useModelSelection(viewer: BimViewer | null): ModelSelection {
       const first = localIds[0];
       if (first === undefined) {
         setGuids([]);
-        setProperties(null);
+        setItem(null);
         return;
       }
       setLoadingProperties(true);
@@ -35,11 +39,18 @@ export function useModelSelection(viewer: BimViewer | null): ModelSelection {
       // Ignore the answer if the user already selected something else.
       if (current !== requestId.current) return;
       setGuids(selectedGuids);
-      setProperties(data ? toElementProperties(first, data) : null);
+      setItem(data ? { localId: first, data } : null);
       setLoadingProperties(false);
     });
     return () => viewer.onSelectionChange(null);
   }, [viewer]);
+
+  // toElementProperties formats numbers and yes/no in the current language.
+  const properties = useMemo(
+    () => (item ? toElementProperties(item.localId, item.data) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-format when the language changes
+    [item, language],
+  );
 
   return { guids, properties, loadingProperties };
 }

@@ -1,3 +1,4 @@
+import { formatNumber } from '../format';
 import { useI18n } from '../i18n/useI18n';
 import type { ElementProperties } from '../viewer/itemProperties';
 import { ChevronRightIcon, PointerIcon } from './Icon';
@@ -34,7 +35,9 @@ export function PropertiesPanel({ properties, selectedCount, loading }: Props) {
 
   return (
     <div className="properties">
-      {selectedCount > 1 && <p className="muted">{t('props.many', { count: selectedCount })}</p>}
+      {selectedCount > 1 && (
+        <p className="muted">{t('props.many', { count: formatNumber(selectedCount) })}</p>
+      )}
       <dl className="fields">
         <Field label={t('props.ifcClass')} value={properties.ifcClass} />
         <Field label={t('props.name')} value={properties.name} />

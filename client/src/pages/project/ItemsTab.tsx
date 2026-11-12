@@ -75,7 +75,7 @@ function BudgetItemForm({
 }) {
   const { t } = useI18n();
   const [form, setForm] = useState<FormState>(item ? toForm(item) : emptyForm);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ key: MessageKey } | { error: unknown } | null>(null);
   const [saving, setSaving] = useState(false);
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -102,7 +102,7 @@ function BudgetItemForm({
     });
     if (!parsed.success) {
       const field = String(parsed.error.issues[0]?.path[0] ?? '');
-      setError(t(INVALID_FIELD[field] ?? 'items.invalid.other'));
+      setError({ key: INVALID_FIELD[field] ?? 'items.invalid.other' });
       return;
     }
     setSaving(true);
@@ -113,7 +113,7 @@ function BudgetItemForm({
       if (!item) setForm(emptyForm);
       onSaved();
     } catch (err) {
-      setError(errorMessage(err));
+      setError({ error: err });
     } finally {
       setSaving(false);
     }
@@ -190,7 +190,9 @@ function BudgetItemForm({
           unit: unitLabel(form.unit),
         })}
       </p>
-      {error && <p className="error-text">{error}</p>}
+      {error && (
+        <p className="error-text">{'key' in error ? t(error.key) : errorMessage(error.error)}</p>
+      )}
       <div className="row">
         <button type="submit" className="primary" disabled={saving}>
           {saving ? t('items.saving') : item ? t('items.save') : t('items.create')}
@@ -219,29 +221,34 @@ function AssignmentBar({
   const { t, tp } = useI18n();
   const [itemId, setItemId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [outcome, setOutcome] = useState<
+    { action: 'assign' | 'unassign'; code: string; affected: number } | { error: unknown } | null
+  >(null);
   const chosen = items.find((i) => i.id === itemId) ?? items[0];
   const count = selectedGuids.length;
+
+  function describeOutcome(
+    o: { action: 'assign' | 'unassign'; code: string; affected: number } | { error: unknown },
+  ): string {
+    if ('error' in o) return errorMessage(o.error);
+    const params = { code: o.code, count: formatNumber(o.affected) };
+    return tp(o.action === 'assign' ? 'items.assigned' : 'items.unassigned', o.affected, params);
+  }
 
   async function run(action: 'assign' | 'unassign') {
     if (!chosen || count === 0) return;
     setBusy(true);
-    setMessage(null);
+    setOutcome(null);
     try {
       const fn = action === 'assign' ? assignBudgetItem : unassignBudgetItem;
       const { affected } = await fn(projectId, selectedGuids, chosen.id);
-      const params = { code: chosen.code, count: formatNumber(affected) };
-      const done =
-        action === 'assign'
-          ? tp('items.assigned', affected, params)
-          : tp('items.unassigned', affected, params);
-      setMessage(done);
-      toast(done);
+      const result = { action, code: chosen.code, affected };
+      setOutcome(result);
+      toast(describeOutcome(result));
       onDone();
     } catch (err) {
-      const failed = errorMessage(err);
-      setMessage(failed);
-      toast(failed, 'error');
+      setOutcome({ error: err });
+      toast(errorMessage(err), 'error');
     } finally {
       setBusy(false);
     }
@@ -282,7 +289,7 @@ function AssignmentBar({
       >
         {t('items.unassign')}
       </button>
-      <span className="muted small">{message ?? t('items.hint')}</span>
+      <span className="muted small">{outcome ? describeOutcome(outcome) : t('items.hint')}</span>
     </div>
   );
 }
@@ -310,7 +317,7 @@ export function ItemsTab({ projectId, dataVersion, selectedGuids, onDataChanged 
   if (state.status === 'error') {
     return (
       <div className="error-box card">
-        <p>{state.error}</p>
+        <p>{errorMessage(state.error)}</p>
         <button type="button" onClick={reload}>
           {t('common.retry')}
         </button>

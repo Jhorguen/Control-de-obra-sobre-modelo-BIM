@@ -3,7 +3,7 @@ import { getBudget } from '../../api/budget';
 import { unitLabel } from '../../budgetLabels';
 import { formatCOP, formatNumber, formatQuantity } from '../../format';
 import { Skeleton } from '../../components/Skeleton';
-import { useAsync } from '../../hooks/useAsync';
+import { errorMessage, useAsync } from '../../hooks/useAsync';
 import { useI18n } from '../../i18n/useI18n';
 import { ifcClassLabel } from '../../ifcClasses';
 
@@ -62,7 +62,7 @@ export function BudgetTab({ projectId, dataVersion, onSelect }: Props) {
   if (state.status === 'error') {
     return (
       <div className="error-box card">
-        <p>{state.error}</p>
+        <p>{errorMessage(state.error)}</p>
         <button type="button" onClick={reload}>
           {t('common.retry')}
         </button>
@@ -112,7 +112,12 @@ export function BudgetTab({ projectId, dataVersion, onSelect }: Props) {
                   <td className="num">
                     {formatNumber(line.elementCount)}
                     {line.withoutQuantity > 0 && (
-                      <abbr className="partial" title={tp('budget.partial', line.withoutQuantity)}>
+                      <abbr
+                        className="partial"
+                        title={tp('budget.partial', line.withoutQuantity, {
+                          count: formatNumber(line.withoutQuantity),
+                        })}
+                      >
                         *
                       </abbr>
                     )}

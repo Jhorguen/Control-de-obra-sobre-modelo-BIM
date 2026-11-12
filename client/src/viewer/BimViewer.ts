@@ -52,6 +52,13 @@ export class BimViewer {
   private readonly fragments: OBC.FragmentsManager;
   private readonly highlighter: OBF.Highlighter;
   private selectionListener: ((localIds: number[]) => void) | null = null;
+  // Table selections run one after another and give up as soon as something newer
+  // happened: a newer row (`latestRequest`), or any other change to the selection, such as
+  // a click in the model or a clear (`selectionEvents` before highlighting, the
+  // Highlighter's own selection after).
+  private selectionQueue: Promise<void> = Promise.resolve();
+  private latestRequest = 0;
+  private selectionEvents = 0;
 
   constructor(container: HTMLElement) {
     const worlds = this.components.get(OBC.Worlds);
@@ -104,10 +111,12 @@ export class BimViewer {
     // Any new selection or clear ends the x-ray view of selectByGuids; selectByGuids
     // turns it back on right after its own highlight.
     selectEvents.onHighlight.add((modelIdMap) => {
+      this.selectionEvents++;
       this.model?.clearGhost();
       this.selectionListener?.([...(modelIdMap[MODEL_ID] ?? [])]);
     });
     selectEvents.onClear.add(() => {
+      this.selectionEvents++;
       this.model?.clearGhost();
       this.selectionListener?.([]);
     });
@@ -188,36 +197,81 @@ export class BimViewer {
    * rest of the model so they show even behind other elements (beams under the roof,
    * footings under the floor slab). Optionally frames them.
    */
-  async selectByGuids(guids: string[], zoom = true): Promise<void> {
+  selectByGuids(guids: string[], zoom = true): Promise<void> {
+    const request = ++this.latestRequest;
+    // Every selection event so far is accounted for. A queued run highlights within the
+    // same task as its last check, so any later event before that is someone else's.
+    const eventsAtRequest = this.selectionEvents;
+    const run = () => this.applySelection(request, eventsAtRequest, guids, zoom);
+    this.selectionQueue = this.selectionQueue.then(run, run);
+    return this.selectionQueue;
+  }
+
+  private async applySelection(
+    request: number,
+    eventsAtRequest: number,
+    guids: string[],
+    zoom: boolean,
+  ): Promise<void> {
     const model = this.model;
-    if (!model) return;
+    const replaced = () =>
+      request !== this.latestRequest ||
+      this.model !== model ||
+      this.selectionEvents !== eventsAtRequest;
+    if (!model || replaced()) return;
     if (guids.length === 0) {
       await this.clearSelection();
       return;
     }
     const localIds = await this.localIdsOf(guids);
+    if (replaced()) return;
+    const wanted = new Set(localIds);
     await this.highlighter.highlightByID(
       this.highlighter.config.selectName,
-      { [MODEL_ID]: new Set(localIds) },
+      { [MODEL_ID]: wanted },
       true,
       false,
     );
-    if (localIds.length === 0) return;
+    // From here on the Highlighter's selection says whether this run is still current:
+    // a click in the model or a clear changes it, whatever the order of the events.
+    const superseded = () =>
+      request !== this.latestRequest || this.model !== model || !this.isSelected(wanted);
+    if (wanted.size === 0 || superseded()) return;
+    const box = await model.getMergedBox(localIds);
+    // Items without drawn geometry have an empty box: nothing to x-ray or frame.
+    if (superseded() || box.isEmpty()) return;
     await model.setGhostItems(localIds, true);
-    if (zoom) await this.frame(model, localIds);
-    await this.fragments.core.update(true);
+    if (superseded()) {
+      model.clearGhost(); // set after the newer selection's own reset
+      return;
+    }
+    if (zoom) {
+      // The queue does not wait for the flight: a newer selection retargets the camera.
+      void this.frame(model, box).then(() => this.fragments.core.update(true));
+    } else {
+      await this.fragments.core.update(true);
+    }
+  }
+
+  /** True when the current selection is exactly these items. */
+  private isSelected(wanted: ReadonlySet<number>): boolean {
+    const current = this.highlighter.selection[this.highlighter.config.selectName]?.[MODEL_ID];
+    if (!current || current.size !== wanted.size) return false;
+    for (const id of wanted) if (!current.has(id)) return false;
+    return true;
   }
 
   /** Clears the selection and, with it, the x-ray view. */
   async clearSelection(): Promise<void> {
+    this.latestRequest++; // drops any table selection still in progress
     await this.highlighter.clear(this.highlighter.config.selectName);
     this.model?.clearGhost();
     await this.fragments.core.update(true);
   }
 
-  /** Points the camera at the elements from the current angle, keeping a minimum distance. */
-  private async frame(model: FragmentsModel, localIds: number[]): Promise<void> {
-    const target = (await model.getMergedBox(localIds)).getBoundingSphere(new THREE.Sphere());
+  /** Points the camera at a box from the current angle, keeping a minimum distance. */
+  private async frame(model: FragmentsModel, box: THREE.Box3): Promise<void> {
+    const target = box.getBoundingSphere(new THREE.Sphere());
     const whole = model.box.getBoundingSphere(new THREE.Sphere());
     target.radius = Math.max(target.radius, whole.radius * MIN_FRAME_SHARE);
     await this.world.camera.controls.fitToSphere(target, true);

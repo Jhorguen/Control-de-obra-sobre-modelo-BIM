@@ -30,7 +30,10 @@ function QuantityCell({ sums, kind }: { sums: QuantitySums; kind: 'volume' | 'ar
     <td className="num">
       {formatQuantity(sums[kind])}
       {missing > 0 && (
-        <abbr className="partial" title={tp('qty.partial', missing)}>
+        <abbr
+          className="partial"
+          title={tp('qty.partial', missing, { count: formatNumber(missing) })}
+        >
           *
         </abbr>
       )}

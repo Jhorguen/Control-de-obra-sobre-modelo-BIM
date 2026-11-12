@@ -22,7 +22,7 @@ import {
   formatShortDate,
 } from '../../format';
 import { Skeleton } from '../../components/Skeleton';
-import { useAsync } from '../../hooks/useAsync';
+import { errorMessage, useAsync } from '../../hooks/useAsync';
 import { useI18n } from '../../i18n/useI18n';
 
 // Chart styling follows the data-viz rules used across the app: two categorical slots
@@ -146,42 +146,44 @@ function LevelChart({ summary }: { summary: ProgressSummary }) {
       </ResponsiveContainer>
       <details>
         <summary>{t('dash.showData')}</summary>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th scope="col">{t('common.level')}</th>
-              <th scope="col" className="num">
-                {t('dash.doneCount')}
-              </th>
-              <th scope="col" className="num">
-                {t('dash.physicalShort')}
-              </th>
-              <th scope="col" className="num">
-                {t('dash.budget')}
-              </th>
-              <th scope="col" className="num">
-                {t('dash.executed')}
-              </th>
-              <th scope="col" className="num">
-                {t('dash.financialShort')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {summary.byLevel.map((level) => (
-              <tr key={level.level ?? '—'}>
-                <td>{level.level ?? t('common.noLevel')}</td>
-                <td className="num">
-                  {formatNumber(level.done)} / {formatNumber(level.elements)}
-                </td>
-                <td className="num">{formatPercent(level.physicalProgress)}</td>
-                <td className="num">{formatCOP(level.budget)}</td>
-                <td className="num">{formatCOP(level.executedValue)}</td>
-                <td className="num">{formatPercent(level.financialProgress)}</td>
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th scope="col">{t('common.level')}</th>
+                <th scope="col" className="num">
+                  {t('dash.doneCount')}
+                </th>
+                <th scope="col" className="num">
+                  {t('dash.physicalShort')}
+                </th>
+                <th scope="col" className="num">
+                  {t('dash.budget')}
+                </th>
+                <th scope="col" className="num">
+                  {t('dash.executed')}
+                </th>
+                <th scope="col" className="num">
+                  {t('dash.financialShort')}
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {summary.byLevel.map((level) => (
+                <tr key={level.level ?? '—'}>
+                  <td>{level.level ?? t('common.noLevel')}</td>
+                  <td className="num">
+                    {formatNumber(level.done)} / {formatNumber(level.elements)}
+                  </td>
+                  <td className="num">{formatPercent(level.physicalProgress)}</td>
+                  <td className="num">{formatCOP(level.budget)}</td>
+                  <td className="num">{formatCOP(level.executedValue)}</td>
+                  <td className="num">{formatPercent(level.financialProgress)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </details>
     </figure>
   );
@@ -203,13 +205,18 @@ function SCurve({ summary }: { summary: ProgressSummary }) {
       <ResponsiveContainer width="100%" height={260}>
         <LineChart data={summary.curve} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke={INK.grid} />
-          <XAxis dataKey="date" {...axisProps} tickFormatter={formatShortDate} minTickGap={24} />
+          <XAxis
+            dataKey="date"
+            {...axisProps}
+            tickFormatter={(iso: string) => formatShortDate(iso)}
+            minTickGap={24}
+          />
           <YAxis
             {...axisProps}
             axisLine={false}
             domain={[0, Math.max(summary.budgetTotal, 1)]}
             tickFormatter={(v: number) => formatCOPCompact(v)}
-            width={72}
+            width="auto"
           />
           <Tooltip
             content={(props) => (
@@ -245,28 +252,30 @@ function SCurve({ summary }: { summary: ProgressSummary }) {
       {!summary.hasPlan && <p className="muted small">{t('dash.noPlan')}</p>}
       <details>
         <summary>{t('dash.showData')}</summary>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th scope="col">{t('common.date')}</th>
-              <th scope="col" className="num">
-                {t('dash.plannedCumulative')}
-              </th>
-              <th scope="col" className="num">
-                {t('dash.executedCumulative')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {summary.curve.map((point) => (
-              <tr key={point.date}>
-                <td>{formatIsoDate(point.date)}</td>
-                <td className="num">{summary.hasPlan ? formatCOP(point.planned) : '—'}</td>
-                <td className="num">{formatCOP(point.executed)}</td>
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th scope="col">{t('common.date')}</th>
+                <th scope="col" className="num">
+                  {t('dash.plannedCumulative')}
+                </th>
+                <th scope="col" className="num">
+                  {t('dash.executedCumulative')}
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {summary.curve.map((point) => (
+                <tr key={point.date}>
+                  <td>{formatIsoDate(point.date)}</td>
+                  <td className="num">{summary.hasPlan ? formatCOP(point.planned) : '—'}</td>
+                  <td className="num">{formatCOP(point.executed)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </details>
     </figure>
   );
@@ -283,7 +292,7 @@ export function DashboardTab({ projectId, dataVersion }: Props) {
   if (state.status === 'error') {
     return (
       <div className="error-box card">
-        <p>{state.error}</p>
+        <p>{errorMessage(state.error)}</p>
         <button type="button" onClick={reload}>
           {t('common.retry')}
         </button>
