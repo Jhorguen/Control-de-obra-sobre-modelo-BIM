@@ -323,88 +323,101 @@ function ProjectView({
 
       <ProgressRibbon counts={coloring.counts} compact />
 
-      <div className="workspace">
-        <div className="viewer-shell">
-          <div ref={containerRef} className="viewer-canvas" />
-          <ModelStatusOverlay status={status} />
-          {coloring.enabled && status.kind === 'ready' && <StatusLegend />}
-          {status.kind === 'ready' && (
-            <div className="viewer-toolbar glass" role="toolbar" aria-label="Vista del modelo">
-              <button
-                type="button"
-                aria-pressed={coloring.enabled}
-                onClick={() => coloring.setEnabled(!coloring.enabled)}
-              >
-                <LayersIcon />
-                Colores de avance
-              </button>
-              <button type="button" onClick={() => void viewer?.fitToModel()}>
-                <FrameIcon />
-                Encuadrar
-              </button>
-              {selection.guids.length > 0 && (
-                <button type="button" onClick={() => void viewer?.clearSelection()}>
-                  <CloseIcon />
-                  Quitar selección
+      <div className="workbench">
+        <div className="stage-column">
+          <div className="viewer-shell">
+            <div ref={containerRef} className="viewer-canvas" />
+            <ModelStatusOverlay status={status} />
+            {coloring.enabled && status.kind === 'ready' && <StatusLegend />}
+            {status.kind === 'ready' && (
+              <div className="viewer-toolbar glass" role="toolbar" aria-label="Vista del modelo">
+                <button
+                  type="button"
+                  aria-pressed={coloring.enabled}
+                  onClick={() => coloring.setEnabled(!coloring.enabled)}
+                >
+                  <LayersIcon />
+                  Colores de avance
+                </button>
+                <button type="button" onClick={() => void viewer?.fitToModel()}>
+                  <FrameIcon />
+                  Encuadrar
+                </button>
+                {selection.guids.length > 0 && (
+                  <button type="button" onClick={() => void viewer?.clearSelection()}>
+                    <CloseIcon />
+                    Quitar selección
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          <aside className="side-panel card">
+            <h2>Propiedades</h2>
+            <PropertiesPanel
+              properties={selection.properties}
+              selectedCount={selection.guids.length}
+              loading={selection.loadingProperties}
+            />
+          </aside>
+        </div>
+
+        <section className="card tabs-card">
+          <div className="tabs-bar">
+            <SegmentedTabs
+              tabs={TABS}
+              value={tab}
+              onChange={setTab}
+              label="Secciones del proyecto"
+            />
+            <div className="tabs-actions">
+              {tab === 'quantities' && project.files.ifc && !project.isDemo && (
+                <button type="button" onClick={() => void reextract()} disabled={busy}>
+                  <RefreshIcon />
+                  Volver a extraer cantidades
                 </button>
               )}
             </div>
-          )}
-        </div>
-        <aside className="side-panel card">
-          <h2>Propiedades</h2>
-          <PropertiesPanel
-            properties={selection.properties}
-            selectedCount={selection.guids.length}
-            loading={selection.loadingProperties}
-          />
-        </aside>
-      </div>
-
-      <section className="card tabs-card">
-        <div className="tabs-bar">
-          <SegmentedTabs tabs={TABS} value={tab} onChange={setTab} label="Secciones del proyecto" />
-          <div className="tabs-actions">
-            {tab === 'quantities' && project.files.ifc && !project.isDemo && (
-              <button type="button" onClick={() => void reextract()} disabled={busy}>
-                <RefreshIcon />
-                Volver a extraer cantidades
-              </button>
+          </div>
+          <div role="tabpanel">
+            {tab === 'quantities' && (
+              <QuantitiesTab
+                projectId={project.id}
+                dataVersion={dataVersion}
+                selectedGuids={selection.guids}
+                onSelect={selectInModel}
+              />
+            )}
+            {tab === 'items' && (
+              <ItemsTab
+                projectId={project.id}
+                dataVersion={dataVersion}
+                selectedGuids={selection.guids}
+                onDataChanged={bumpData}
+              />
+            )}
+            {tab === 'budget' && (
+              <BudgetTab
+                projectId={project.id}
+                dataVersion={dataVersion}
+                onSelect={selectInModel}
+              />
+            )}
+            {tab === 'progress' && (
+              <ProgressTab
+                projectId={project.id}
+                dataVersion={dataVersion}
+                selectedGuids={selection.guids}
+                statusMap={coloring.entries}
+                onDataChanged={bumpData}
+              />
+            )}
+            {tab === 'dashboard' && (
+              <DashboardTab projectId={project.id} dataVersion={dataVersion} />
             )}
           </div>
-        </div>
-        <div role="tabpanel">
-          {tab === 'quantities' && (
-            <QuantitiesTab
-              projectId={project.id}
-              dataVersion={dataVersion}
-              selectedGuids={selection.guids}
-              onSelect={selectInModel}
-            />
-          )}
-          {tab === 'items' && (
-            <ItemsTab
-              projectId={project.id}
-              dataVersion={dataVersion}
-              selectedGuids={selection.guids}
-              onDataChanged={bumpData}
-            />
-          )}
-          {tab === 'budget' && (
-            <BudgetTab projectId={project.id} dataVersion={dataVersion} onSelect={selectInModel} />
-          )}
-          {tab === 'progress' && (
-            <ProgressTab
-              projectId={project.id}
-              dataVersion={dataVersion}
-              selectedGuids={selection.guids}
-              statusMap={coloring.entries}
-              onDataChanged={bumpData}
-            />
-          )}
-          {tab === 'dashboard' && <DashboardTab projectId={project.id} dataVersion={dataVersion} />}
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }

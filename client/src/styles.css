@@ -907,7 +907,17 @@ select:focus-visible {
   flex-wrap: wrap;
 }
 
-.workspace {
+/*
+ * The workbench: the stage (viewer + properties) and the tabs. Stacked by default;
+ * side by side on wide screens (see the end of the file), where the stage stays
+ * pinned so a click on a table row shows its result without scrolling.
+ */
+.workbench {
+  display: grid;
+  gap: 18px;
+}
+
+.stage-column {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 380px;
   gap: 18px;
@@ -1277,8 +1287,9 @@ select:focus-visible {
 /* ---------- Segmented tabs with a sliding indicator ---------- */
 
 .tabs-card {
-  margin-top: 18px;
   border-radius: var(--radius-xl);
+  /* Tab layouts adapt to the card's width, which depends on the workbench layout */
+  container: tabs / inline-size;
 }
 
 .tabs-bar {
@@ -1496,6 +1507,8 @@ select:focus-visible {
 .progress-tab,
 .dashboard {
   display: grid;
+  /* minmax(0, …): long content (a select sized by its longest option) cannot widen the tab */
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
@@ -1513,7 +1526,7 @@ select:focus-visible {
 
 .assign-bar select {
   width: auto;
-  min-width: 300px;
+  min-width: min(300px, 100%);
   max-width: 100%;
 }
 
@@ -1850,7 +1863,7 @@ select:focus-visible {
   }
 
   .projects-page,
-  .workspace,
+  .stage-column,
   .left-out-grid,
   .progress-forms,
   .chart-grid {
@@ -1908,5 +1921,115 @@ select:focus-visible {
 
   .viewer-toolbar button {
     min-height: 40px;
+  }
+}
+
+/* Tab layouts inside a narrow tabs card (the right column of the workbench) */
+@container tabs (max-width: 860px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chart-grid,
+  .left-out-grid,
+  .progress-forms {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-grid .span-3 {
+    grid-column: span 2;
+  }
+}
+
+/*
+ * Tables in a medium-width tabs card wrap their text so every column fits without
+ * sideways scrolling; figures stay on one line. Phone-width cards keep one line per
+ * row and scroll sideways instead.
+ */
+@container tabs (min-width: 560px) and (max-width: 1000px) {
+  .data-table th,
+  .data-table td {
+    padding: 8px 10px;
+    white-space: normal;
+  }
+
+  .data-table td.num {
+    white-space: nowrap;
+  }
+}
+
+/*
+ * Wide screens: the workbench goes side by side. The stage stays pinned under the app
+ * bar while the page scrolls the tabs, so tables use the page scroll (one scroll, with
+ * the header row pinned under the app bar) instead of a scroll box of their own.
+ */
+@media (min-width: 1180px) and (min-height: 620px) {
+  .app-main:has(.workbench) {
+    max-width: 1880px;
+  }
+
+  .workbench {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    align-items: start;
+  }
+
+  .stage-column {
+    position: sticky;
+    top: 76px;
+    height: calc(100dvh - 92px);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(180px, 32%);
+    gap: 14px;
+  }
+
+  .viewer-shell,
+  .side-panel {
+    height: auto;
+    min-height: 0;
+  }
+
+  .workbench > .tabs-card {
+    min-height: calc(100dvh - 92px);
+  }
+
+  /* The chart data tables (inside <details>) keep their own scroll box */
+  .workbench .table-scroll:not(details .table-scroll) {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .workbench .data-table thead th {
+    top: 60px;
+  }
+
+  .workbench .data-table thead th:first-child {
+    border-top-left-radius: var(--radius-lg);
+  }
+
+  .workbench .data-table thead th:last-child {
+    border-top-right-radius: var(--radius-lg);
+  }
+}
+
+/*
+ * A narrow workbench column (small laptops): denser tables, and sideways scrolling as a
+ * last resort so no column is ever cut off. After the wide-screen block on purpose.
+ */
+@container tabs (min-width: 560px) and (max-width: 720px) {
+  .data-table {
+    font-size: var(--text-sm);
+  }
+
+  .data-table th,
+  .data-table td {
+    padding-inline: 8px;
+  }
+
+  .workbench .table-scroll:not(details .table-scroll) {
+    overflow-x: auto;
   }
 }
