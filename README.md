@@ -2,7 +2,7 @@
 
 En obra, el presupuesto vive en Excel, las cantidades se sacan de planos y el avance se reporta en actas que nadie cruza con el modelo. Esta aplicación junta las tres cosas sobre el **modelo BIM (IFC)**: extrae las cantidades del modelo, las valora con ítems de presupuesto (precio unitario de APU) y registra el avance elemento por elemento, con el modelo 3D coloreado según lo ejecutado y un tablero de avance físico y financiero.
 
-**Demo:** _pendiente de desplegar_ (ver [docs/DEPLOY.md](docs/DEPLOY.md)). Incluye un proyecto de demostración listo para explorar.
+**Demo:** [control-de-obra-sobre-modelo-bim.vercel.app](https://control-de-obra-sobre-modelo-bim.vercel.app). Incluye un proyecto de demostración listo para explorar. La API corre en el plan gratuito de Render: si llevaba un rato sin uso, la primera carga tarda cerca de un minuto. Cómo desplegar tu propia copia: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ![Flujo completo: visor, cantidades, presupuesto, avance y tablero](docs/images/flujo.gif)
 
