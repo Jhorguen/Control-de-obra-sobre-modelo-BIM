@@ -1,29 +1,17 @@
 import type { QuantitySource, Unit } from '@bim/shared';
+import { formatNumber } from './format';
+import { t } from './i18n/core';
 
-export const UNIT_LABELS: Record<Unit, string> = {
-  M3: 'm³',
-  M2: 'm²',
-  M: 'm',
-  KG: 'kg',
-  UN: 'un',
-};
+export function unitLabel(unit: Unit): string {
+  return t(`unit.${unit}`);
+}
 
-export const SOURCE_LABELS: Record<QuantitySource, string> = {
-  VOLUME: 'Volumen (m³)',
-  AREA: 'Área (m²)',
-  LENGTH: 'Longitud (m)',
-  COUNT: 'Conteo (1 por elemento)',
-};
-
-const SHORT_SOURCE: Record<QuantitySource, string> = {
-  VOLUME: 'volumen',
-  AREA: 'área',
-  LENGTH: 'longitud',
-  COUNT: '1 por elemento',
-};
+export function sourceLabel(source: QuantitySource): string {
+  return t(`source.${source}`);
+}
 
 /** "volumen × 90" — how an item turns element quantities into its own unit. */
 export function quantityRule(source: QuantitySource, factor: number): string {
-  const base = SHORT_SOURCE[source];
-  return factor === 1 ? base : `${base} × ${new Intl.NumberFormat('es-CO').format(factor)}`;
+  const base = t(`sourceShort.${source}`);
+  return factor === 1 ? base : `${base} × ${formatNumber(factor)}`;
 }

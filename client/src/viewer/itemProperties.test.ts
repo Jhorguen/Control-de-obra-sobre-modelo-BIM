@@ -1,6 +1,9 @@
 import type { ItemData } from '@thatopen/fragments';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { setLanguage } from '../i18n/core';
 import { formatPropertyValue, toElementProperties } from './itemProperties';
+
+beforeEach(() => setLanguage('es'));
 
 // Same shape Fragments returns from model.getItemsData() with IsDefinedBy and
 // ContainedInStructure relations (verified against AC20-FZK-Haus.ifc).
@@ -76,5 +79,11 @@ describe('formatPropertyValue', () => {
     expect(formatPropertyValue(1234.5)).toBe('1.234,5');
     expect(formatPropertyValue(false)).toBe('No');
     expect(formatPropertyValue(null)).toBe('—');
+  });
+
+  it('follows the interface language', () => {
+    setLanguage('en');
+    expect(formatPropertyValue(1234.5)).toBe('1,234.5');
+    expect(formatPropertyValue(true)).toBe('Yes');
   });
 });

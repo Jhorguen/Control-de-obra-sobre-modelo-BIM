@@ -1,32 +1,7 @@
-// Spanish names for the IFC classes that usually appear in building models.
+import { isMessageKey, t } from './i18n/core';
 
-const LABELS: Record<string, string> = {
-  IfcWall: 'Muros',
-  IfcWallStandardCase: 'Muros',
-  IfcCurtainWall: 'Muros cortina',
-  IfcSlab: 'Losas',
-  IfcRoof: 'Cubiertas',
-  IfcBeam: 'Vigas',
-  IfcColumn: 'Columnas',
-  IfcMember: 'Miembros (correas, cerchas)',
-  IfcPlate: 'Placas',
-  IfcFooting: 'Cimentaciones',
-  IfcPile: 'Pilotes',
-  IfcStair: 'Escaleras',
-  IfcStairFlight: 'Tramos de escalera',
-  IfcRamp: 'Rampas',
-  IfcRailing: 'Barandas',
-  IfcDoor: 'Puertas',
-  IfcWindow: 'Ventanas',
-  IfcCovering: 'Recubrimientos',
-  IfcBuildingElementProxy: 'Elementos genéricos',
-  IfcFurniture: 'Mobiliario',
-  IfcFurnishingElement: 'Mobiliario',
-  IfcReinforcingBar: 'Barras de refuerzo',
-  IfcFlowSegment: 'Tuberías y ductos',
-  IfcFlowTerminal: 'Aparatos',
-};
-
+/** Readable name of an IFC class (see the `ifc.*` texts); unknown classes keep their name. */
 export function ifcClassLabel(ifcClass: string): string {
-  return LABELS[ifcClass] ?? ifcClass;
+  const key = `ifc.${ifcClass}`;
+  return isMessageKey(key) ? t(key) : ifcClass;
 }

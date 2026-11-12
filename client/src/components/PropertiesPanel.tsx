@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/useI18n';
 import type { ElementProperties } from '../viewer/itemProperties';
 import { ChevronRightIcon, PointerIcon } from './Icon';
 
@@ -17,38 +18,32 @@ function Field({ label, value, mono }: { label: string; value: string | null; mo
 }
 
 export function PropertiesPanel({ properties, selectedCount, loading }: Props) {
+  const { t } = useI18n();
   if (selectedCount === 0) {
     return (
       <div className="properties-empty">
         <span className="empty-icon" aria-hidden="true">
           <PointerIcon size={22} />
         </span>
-        <p className="muted">
-          Haz clic en un elemento del modelo para ver sus propiedades. Con Ctrl + clic seleccionas
-          varios.
-        </p>
+        <p className="muted">{t('props.empty')}</p>
       </div>
     );
   }
-  if (loading) return <p className="muted">Cargando propiedades…</p>;
-  if (!properties) return <p className="muted">No se encontraron propiedades.</p>;
+  if (loading) return <p className="muted">{t('props.loading')}</p>;
+  if (!properties) return <p className="muted">{t('props.notFound')}</p>;
 
   return (
     <div className="properties">
-      {selectedCount > 1 && (
-        <p className="muted">{selectedCount} elementos seleccionados. Se muestra el primero.</p>
-      )}
+      {selectedCount > 1 && <p className="muted">{t('props.many', { count: selectedCount })}</p>}
       <dl className="fields">
-        <Field label="Clase IFC" value={properties.ifcClass} />
-        <Field label="Nombre" value={properties.name} />
-        <Field label="Tipo" value={properties.typeName} />
-        <Field label="Nivel" value={properties.level} />
+        <Field label={t('props.ifcClass')} value={properties.ifcClass} />
+        <Field label={t('props.name')} value={properties.name} />
+        <Field label={t('props.type')} value={properties.typeName} />
+        <Field label={t('common.level')} value={properties.level} />
         <Field label="GlobalId" value={properties.globalId} mono />
       </dl>
 
-      {properties.groups.length === 0 && (
-        <p className="muted">El elemento no tiene conjuntos de propiedades.</p>
-      )}
+      {properties.groups.length === 0 && <p className="muted">{t('props.noSets')}</p>}
       {properties.groups.map((group) => (
         <details
           key={`${group.kind}-${group.name}`}
@@ -59,7 +54,7 @@ export function PropertiesPanel({ properties, selectedCount, loading }: Props) {
             <ChevronRightIcon className="chevron" size={14} />
             {group.name}
             <span className="tag">
-              {group.kind === 'quantities' ? 'Cantidades' : 'Propiedades'}
+              {group.kind === 'quantities' ? t('props.quantities') : t('props.properties')}
             </span>
           </summary>
           <table>

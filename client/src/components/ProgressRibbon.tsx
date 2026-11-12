@@ -1,6 +1,7 @@
 import type { ProgressStatus } from '@bim/shared';
 import { formatNumber, formatPercent } from '../format';
-import { STATUS_LABELS } from '../progressLabels';
+import { useI18n } from '../i18n/useI18n';
+import { statusLabel } from '../progressLabels';
 
 export interface StatusCounts {
   done: number;
@@ -26,6 +27,7 @@ export function ProgressRibbon({
   counts: StatusCounts;
   compact?: boolean;
 }) {
+  const { t } = useI18n();
   const total = counts.done + counts.inProgress + counts.pending;
   if (total === 0) return null;
 
@@ -34,9 +36,12 @@ export function ProgressRibbon({
       <div
         className="ribbon-bar"
         role="img"
-        aria-label={`Avance físico ${formatPercent(counts.done / total)}: ${SEGMENTS.map(
-          ({ status, key }) => `${STATUS_LABELS[status]} ${counts[key]}`,
-        ).join(', ')}`}
+        aria-label={t('ribbon.aria', {
+          percent: formatPercent(counts.done / total),
+          parts: SEGMENTS.map(({ status, key }) => `${statusLabel(status)} ${counts[key]}`).join(
+            ', ',
+          ),
+        })}
       >
         {SEGMENTS.map(({ status, key }) =>
           counts[key] > 0 ? (
@@ -50,12 +55,12 @@ export function ProgressRibbon({
       </div>
       <ul className="ribbon-legend">
         <li className="ribbon-total">
-          <strong>{formatPercent(counts.done / total)}</strong> ejecutado
+          <strong>{formatPercent(counts.done / total)}</strong> {t('ribbon.done')}
         </li>
         {SEGMENTS.map(({ status, key }) => (
           <li key={status}>
             <span className={`swatch status-${status}`} aria-hidden="true" />
-            {STATUS_LABELS[status]} <span className="num">{formatNumber(counts[key])}</span>
+            {statusLabel(status)} <span className="num">{formatNumber(counts[key])}</span>
           </li>
         ))}
       </ul>

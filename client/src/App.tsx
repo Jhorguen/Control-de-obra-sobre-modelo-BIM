@@ -1,9 +1,11 @@
 import { lazy, Suspense } from 'react';
 import { HealthStatus } from './components/HealthStatus';
 import { BrandMark } from './components/Icon';
+import { LanguageSwitch } from './components/LanguageSwitch';
 import { Link } from './components/Link';
 import { Loading } from './components/Loading';
 import { Toaster } from './components/Toaster';
+import { useI18n } from './i18n/useI18n';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { matchRoute, usePathname } from './router';
 
@@ -15,6 +17,7 @@ const ProjectPage = lazy(() =>
 
 export function App() {
   const route = matchRoute(usePathname());
+  const { t } = useI18n();
 
   return (
     <div className="app">
@@ -23,21 +26,24 @@ export function App() {
           <span className="brand-mark">
             <BrandMark size={20} />
           </span>
-          Control de obra BIM
+          {t('app.title')}
         </Link>
-        <HealthStatus />
+        <div className="header-tools">
+          <LanguageSwitch />
+          <HealthStatus />
+        </div>
       </header>
       <main className="app-main">
         {route.name === 'projects' && <ProjectsPage />}
         {route.name === 'project' && (
-          <Suspense fallback={<Loading text="Cargando el visor…" />}>
+          <Suspense fallback={<Loading text={t('app.loadingViewer')} />}>
             <ProjectPage key={route.id} id={route.id} />
           </Suspense>
         )}
         {route.name === 'notFound' && (
           <div className="card">
-            <p>Esta página no existe.</p>
-            <Link href="/">Volver a proyectos</Link>
+            <p>{t('app.notFound')}</p>
+            <Link href="/">{t('app.backToProjects')}</Link>
           </div>
         )}
       </main>

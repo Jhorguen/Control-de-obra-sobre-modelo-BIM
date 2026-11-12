@@ -1,6 +1,7 @@
 import type { QuantitiesResponse, QuantityGroup, QuantitySums } from '@bim/shared';
 import { useEffect, useRef, type KeyboardEvent } from 'react';
 import { formatNumber, formatQuantity } from '../format';
+import { useI18n } from '../i18n/useI18n';
 import { ifcClassLabel } from '../ifcClasses';
 
 interface Props {
@@ -11,6 +12,7 @@ interface Props {
 
 /** A sum that ignores elements without the quantity is flagged so nobody reads it as complete. */
 function QuantityCell({ sums, kind }: { sums: QuantitySums; kind: 'volume' | 'area' | 'length' }) {
+  const { t, tp } = useI18n();
   const missing =
     kind === 'volume'
       ? sums.withoutVolume
@@ -19,7 +21,7 @@ function QuantityCell({ sums, kind }: { sums: QuantitySums; kind: 'volume' | 'ar
         : sums.withoutLength;
   if (missing === sums.count) {
     return (
-      <td className="num muted" title="El IFC no trae esta cantidad">
+      <td className="num muted" title={t('qty.missing')}>
         —
       </td>
     );
@@ -28,7 +30,7 @@ function QuantityCell({ sums, kind }: { sums: QuantitySums; kind: 'volume' | 'ar
     <td className="num">
       {formatQuantity(sums[kind])}
       {missing > 0 && (
-        <abbr className="partial" title={`${missing} elemento(s) sin esta cantidad en el IFC`}>
+        <abbr className="partial" title={tp('qty.partial', missing)}>
           *
         </abbr>
       )}
@@ -44,6 +46,7 @@ function selectOnKey(event: KeyboardEvent, select: () => void) {
 }
 
 export function QuantitiesTable({ data, selectedGuids, onSelect }: Props) {
+  const { t } = useI18n();
   const selected = new Set(selectedGuids);
   const isSelected = (group: QuantityGroup) => group.globalIds.some((guid) => selected.has(guid));
   const firstSelectedRow = useRef<HTMLTableRowElement | null>(null);
@@ -55,7 +58,7 @@ export function QuantitiesTable({ data, selectedGuids, onSelect }: Props) {
   }, [firstSelectedGroup]);
 
   if (data.groups.length === 0) {
-    return <p className="muted">No hay elementos. Sube un IFC para obtener las cantidades.</p>;
+    return <p className="muted">{t('qty.empty')}</p>;
   }
 
   return (
@@ -64,19 +67,19 @@ export function QuantitiesTable({ data, selectedGuids, onSelect }: Props) {
         <table className="data-table">
           <thead>
             <tr>
-              <th scope="col">Clase / tipo</th>
-              <th scope="col">Nivel</th>
+              <th scope="col">{t('qty.classType')}</th>
+              <th scope="col">{t('common.level')}</th>
               <th scope="col" className="num">
-                Elementos
+                {t('common.elements')}
               </th>
               <th scope="col" className="num">
-                Volumen (m³)
+                {t('qty.volume')}
               </th>
               <th scope="col" className="num">
-                Área (m²)
+                {t('qty.area')}
               </th>
               <th scope="col" className="num">
-                Longitud (m)
+                {t('qty.length')}
               </th>
             </tr>
           </thead>
@@ -116,9 +119,9 @@ export function QuantitiesTable({ data, selectedGuids, onSelect }: Props) {
                       onKeyDown={(e) => selectOnKey(e, selectGroup)}
                     >
                       <td className="indent">
-                        {group.typeName ?? <span className="muted">Sin tipo</span>}
+                        {group.typeName ?? <span className="muted">{t('common.noType')}</span>}
                       </td>
-                      <td>{group.level ?? <span className="muted">Sin nivel</span>}</td>
+                      <td>{group.level ?? <span className="muted">{t('common.noLevel')}</span>}</td>
                       <td className="num">{formatNumber(group.count)}</td>
                       <QuantityCell sums={group} kind="volume" />
                       <QuantityCell sums={group} kind="area" />
@@ -132,21 +135,18 @@ export function QuantitiesTable({ data, selectedGuids, onSelect }: Props) {
           <tfoot>
             <tr>
               <th scope="row" colSpan={2}>
-                Total del modelo
+                {t('qty.total')}
               </th>
               <td className="num">{formatNumber(data.totals.count)}</td>
               <QuantityCell sums={data.totals} kind="volume" />
               <td colSpan={2} className="muted small">
-                Áreas y longitudes solo se suman por clase.
+                {t('qty.totalNote')}
               </td>
             </tr>
           </tfoot>
         </table>
       </div>
-      <p className="muted small table-note">
-        Clic en una fila para ver esos elementos en el modelo. * Algunos elementos no traen esa
-        cantidad en el IFC y no se suman (no se inventan valores).
-      </p>
+      <p className="muted small table-note">{t('qty.note')}</p>
     </>
   );
 }

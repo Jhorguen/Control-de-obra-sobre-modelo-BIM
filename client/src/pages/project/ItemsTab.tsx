@@ -16,11 +16,13 @@ import {
   unassignBudgetItem,
   updateBudgetItem,
 } from '../../api/budget';
-import { quantityRule, SOURCE_LABELS, UNIT_LABELS } from '../../budgetLabels';
+import { quantityRule, sourceLabel, unitLabel } from '../../budgetLabels';
 import { PencilIcon, TrashIcon } from '../../components/Icon';
 import { formatCOP, formatNumber } from '../../format';
 import { Skeleton } from '../../components/Skeleton';
 import { errorMessage, useAsync } from '../../hooks/useAsync';
+import type { MessageKey } from '../../i18n/messages.es';
+import { useI18n } from '../../i18n/useI18n';
 import { toast } from '../../toast';
 
 interface Props {
@@ -48,6 +50,14 @@ const emptyForm: FormState = {
   unitPrice: '',
 };
 
+/** Message for the first invalid field (the shared schema's own messages are in Spanish). */
+const INVALID_FIELD: Partial<Record<string, MessageKey>> = {
+  code: 'items.invalid.code',
+  description: 'items.invalid.description',
+  factor: 'items.invalid.factor',
+  unitPrice: 'items.invalid.unitPrice',
+};
+
 function toForm(item: BudgetItem): FormState {
   return { ...item, factor: String(item.factor), unitPrice: String(item.unitPrice) };
 }
@@ -63,6 +73,7 @@ function BudgetItemForm({
   onSaved: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
   const [form, setForm] = useState<FormState>(item ? toForm(item) : emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -90,7 +101,8 @@ function BudgetItemForm({
       unitPrice: form.unitPrice === '' ? Number.NaN : Number(form.unitPrice),
     });
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? 'Revisa los datos del ítem.');
+      const field = String(parsed.error.issues[0]?.path[0] ?? '');
+      setError(t(INVALID_FIELD[field] ?? 'items.invalid.other'));
       return;
     }
     setSaving(true);
@@ -109,49 +121,49 @@ function BudgetItemForm({
 
   return (
     <form className="item-form" onSubmit={handleSubmit}>
-      <h2>{item ? `Editar ítem ${item.code}` : 'Nuevo ítem'}</h2>
+      <h2>{item ? t('items.edit', { code: item.code }) : t('items.new')}</h2>
       <div className="form-grid">
         <label>
-          Código
+          {t('common.code')}
           <input
             value={form.code}
             onChange={(e) => set('code', e.target.value)}
-            placeholder="Ej. 2.1"
+            placeholder={t('items.codePlaceholder')}
           />
         </label>
         <label className="span-3">
-          Descripción
+          {t('common.description')}
           <input
             value={form.description}
             onChange={(e) => set('description', e.target.value)}
-            placeholder="Ej. Concreto 3000 psi para muros"
+            placeholder={t('items.descriptionPlaceholder')}
           />
         </label>
         <label>
-          Unidad
+          {t('items.unit')}
           <select value={form.unit} onChange={(e) => changeUnit(unitSchema.parse(e.target.value))}>
             {unitSchema.options.map((unit) => (
               <option key={unit} value={unit}>
-                {UNIT_LABELS[unit]}
+                {unitLabel(unit)}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Cantidad desde
+          {t('items.source')}
           <select
             value={form.quantitySource}
             onChange={(e) => set('quantitySource', quantitySourceSchema.parse(e.target.value))}
           >
             {quantitySourceSchema.options.map((source) => (
               <option key={source} value={source}>
-                {SOURCE_LABELS[source]}
+                {sourceLabel(source)}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Factor
+          {t('items.factor')}
           <input
             type="number"
             step="any"
@@ -161,30 +173,31 @@ function BudgetItemForm({
           />
         </label>
         <label>
-          Precio unitario (COP)
+          {t('items.unitPriceCop')}
           <input
             type="number"
             step="0.01"
             min="0"
             value={form.unitPrice}
             onChange={(e) => set('unitPrice', e.target.value)}
-            placeholder="Ej. 450000"
+            placeholder={t('items.unitPricePlaceholder')}
           />
         </label>
       </div>
       <p className="muted small">
-        Cantidad por elemento = {quantityRule(form.quantitySource, Number(form.factor) || 0)} (
-        {UNIT_LABELS[form.unit]}). Ej.: acero de refuerzo en kg = volumen × 90 kg/m³; formaleta a
-        dos caras = área × 2.
+        {t('items.rule', {
+          rule: quantityRule(form.quantitySource, Number(form.factor) || 0),
+          unit: unitLabel(form.unit),
+        })}
       </p>
       {error && <p className="error-text">{error}</p>}
       <div className="row">
         <button type="submit" className="primary" disabled={saving}>
-          {saving ? 'Guardando…' : item ? 'Guardar cambios' : 'Crear ítem'}
+          {saving ? t('items.saving') : item ? t('items.save') : t('items.create')}
         </button>
         {item && (
           <button type="button" onClick={onCancel}>
-            Cancelar
+            {t('common.cancel')}
           </button>
         )}
       </div>
@@ -203,6 +216,7 @@ function AssignmentBar({
   selectedGuids: readonly string[];
   onDone: () => void;
 }) {
+  const { t, tp } = useI18n();
   const [itemId, setItemId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -216,10 +230,11 @@ function AssignmentBar({
     try {
       const fn = action === 'assign' ? assignBudgetItem : unassignBudgetItem;
       const { affected } = await fn(projectId, selectedGuids, chosen.id);
+      const params = { code: chosen.code, count: formatNumber(affected) };
       const done =
         action === 'assign'
-          ? `Ítem ${chosen.code} asignado a ${formatNumber(affected)} elemento(s).`
-          : `Ítem ${chosen.code} quitado de ${formatNumber(affected)} elemento(s).`;
+          ? tp('items.assigned', affected, params)
+          : tp('items.unassigned', affected, params);
       setMessage(done);
       toast(done);
       onDone();
@@ -235,15 +250,17 @@ function AssignmentBar({
   return (
     <div className="assign-bar">
       <strong>
-        {count === 0 ? 'Sin selección' : `${formatNumber(count)} elemento(s) seleccionado(s)`}
+        {count === 0
+          ? t('common.noSelection')
+          : tp('common.selected', count, { count: formatNumber(count) })}
       </strong>
       <select
         value={chosen?.id ?? ''}
         onChange={(e) => setItemId(Number(e.target.value))}
         disabled={items.length === 0}
-        aria-label="Ítem a asignar"
+        aria-label={t('items.itemToAssign')}
       >
-        {items.length === 0 && <option value="">Primero crea un ítem</option>}
+        {items.length === 0 && <option value="">{t('items.createFirst')}</option>}
         {items.map((item) => (
           <option key={item.id} value={item.id}>
             {item.code} — {item.description}
@@ -256,19 +273,16 @@ function AssignmentBar({
         onClick={() => void run('assign')}
         disabled={busy || count === 0 || !chosen}
       >
-        Asignar
+        {t('items.assign')}
       </button>
       <button
         type="button"
         onClick={() => void run('unassign')}
         disabled={busy || count === 0 || !chosen}
       >
-        Quitar
+        {t('items.unassign')}
       </button>
-      <span className="muted small">
-        {message ??
-          'Selecciona elementos en el modelo (Ctrl + clic para varios) o una fila de Cantidades, p. ej. un tipo de muro.'}
-      </span>
+      <span className="muted small">{message ?? t('items.hint')}</span>
     </div>
   );
 }
@@ -279,10 +293,10 @@ export function ItemsTab({ projectId, dataVersion, selectedGuids, onDataChanged 
     `${projectId}:${dataVersion}`,
   );
   const [editing, setEditing] = useState<BudgetItem | null>(null);
+  const { t } = useI18n();
 
   async function handleDelete(item: BudgetItem) {
-    if (!window.confirm(`¿Eliminar el ítem ${item.code}? Se quitará de todos sus elementos.`))
-      return;
+    if (!window.confirm(t('items.deleteConfirm', { code: item.code }))) return;
     try {
       await deleteBudgetItem(item.id);
       if (editing?.id === item.id) setEditing(null);
@@ -292,13 +306,13 @@ export function ItemsTab({ projectId, dataVersion, selectedGuids, onDataChanged 
     }
   }
 
-  if (state.status === 'loading') return <Skeleton label="Cargando ítems" rows={6} />;
+  if (state.status === 'loading') return <Skeleton label={t('items.loading')} rows={6} />;
   if (state.status === 'error') {
     return (
       <div className="error-box card">
         <p>{state.error}</p>
         <button type="button" onClick={reload}>
-          Reintentar
+          {t('common.retry')}
         </button>
       </div>
     );
@@ -324,23 +338,21 @@ export function ItemsTab({ projectId, dataVersion, selectedGuids, onDataChanged 
         onCancel={() => setEditing(null)}
       />
       {items.length === 0 ? (
-        <p className="muted">
-          Aún no hay ítems. Crea el primero con el formulario (el precio unitario sale del APU).
-        </p>
+        <p className="muted">{t('items.empty')}</p>
       ) : (
         <div className="table-scroll">
           <table className="data-table">
             <thead>
               <tr>
-                <th scope="col">Código</th>
-                <th scope="col">Descripción</th>
-                <th scope="col">Und</th>
-                <th scope="col">Cantidad desde</th>
+                <th scope="col">{t('common.code')}</th>
+                <th scope="col">{t('common.description')}</th>
+                <th scope="col">{t('common.unitShort')}</th>
+                <th scope="col">{t('items.source')}</th>
                 <th scope="col" className="num">
-                  Precio unitario
+                  {t('common.unitPrice')}
                 </th>
                 <th scope="col">
-                  <span className="visually-hidden">Acciones</span>
+                  <span className="visually-hidden">{t('items.actions')}</span>
                 </th>
               </tr>
             </thead>
@@ -349,7 +361,7 @@ export function ItemsTab({ projectId, dataVersion, selectedGuids, onDataChanged 
                 <tr key={item.id} className={editing?.id === item.id ? 'selected' : ''}>
                   <td>{item.code}</td>
                   <td className="wrap">{item.description}</td>
-                  <td>{UNIT_LABELS[item.unit]}</td>
+                  <td>{unitLabel(item.unit)}</td>
                   <td>{quantityRule(item.quantitySource, item.factor)}</td>
                   <td className="num">{formatCOP(item.unitPrice)}</td>
                   <td className="actions">
@@ -358,8 +370,8 @@ export function ItemsTab({ projectId, dataVersion, selectedGuids, onDataChanged 
                         type="button"
                         className="icon-only"
                         onClick={() => setEditing(item)}
-                        aria-label={`Editar el ítem ${item.code}`}
-                        title="Editar"
+                        aria-label={t('items.editLabel', { code: item.code })}
+                        title={t('common.edit')}
                       >
                         <PencilIcon />
                       </button>
@@ -367,8 +379,8 @@ export function ItemsTab({ projectId, dataVersion, selectedGuids, onDataChanged 
                         type="button"
                         className="danger icon-only"
                         onClick={() => void handleDelete(item)}
-                        aria-label={`Eliminar el ítem ${item.code}`}
-                        title="Eliminar"
+                        aria-label={t('items.deleteLabel', { code: item.code })}
+                        title={t('common.delete')}
                       >
                         <TrashIcon />
                       </button>

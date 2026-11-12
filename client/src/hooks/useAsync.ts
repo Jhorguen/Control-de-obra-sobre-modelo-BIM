@@ -1,14 +1,24 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '../api/http';
+import { getLanguage, isMessageKey, t } from '../i18n/core';
 
 export type AsyncState<T> =
   { status: 'loading' } | { status: 'success'; data: T } | { status: 'error'; error: string };
 
+/**
+ * Text for an error, in the interface language. API messages are written in Spanish and
+ * carry details (e.g. the duplicated code), so Spanish shows them as they are; English
+ * translates the error code and keeps the original message for unknown codes.
+ */
 export function errorMessage(error: unknown): string {
-  if (error instanceof ApiError) return error.message;
+  if (error instanceof ApiError) {
+    if (getLanguage() === 'es') return error.message;
+    const key = `errors.${error.code}`;
+    return isMessageKey(key) ? t(key, { status: error.status }) : error.message;
+  }
   // Unexpected (non-API) errors are logged so they can be diagnosed from the console.
   console.error(error);
-  return 'Ocurrió un error inesperado.';
+  return t('errors.unexpected');
 }
 
 /**

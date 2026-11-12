@@ -1,9 +1,10 @@
 import type { ElementGroup } from '@bim/shared';
 import { getBudget } from '../../api/budget';
-import { UNIT_LABELS } from '../../budgetLabels';
+import { unitLabel } from '../../budgetLabels';
 import { formatCOP, formatNumber, formatQuantity } from '../../format';
 import { Skeleton } from '../../components/Skeleton';
 import { useAsync } from '../../hooks/useAsync';
+import { useI18n } from '../../i18n/useI18n';
 import { ifcClassLabel } from '../../ifcClasses';
 
 interface Props {
@@ -23,6 +24,7 @@ function LeftOutGroup({
   group: ElementGroup;
   onSelect: (guids: string[]) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className={`left-out card ${group.count > 0 ? 'warn' : ''}`}>
       <div className="row space-between">
@@ -31,7 +33,7 @@ function LeftOutGroup({
         </h2>
         {group.count > 0 && (
           <button type="button" onClick={() => onSelect(group.globalIds)}>
-            Ver en el modelo
+            {t('budget.showInModel')}
           </button>
         )}
       </div>
@@ -50,18 +52,19 @@ function LeftOutGroup({
 }
 
 export function BudgetTab({ projectId, dataVersion, onSelect }: Props) {
+  const { t, tp } = useI18n();
   const { state, reload } = useAsync(
     (signal) => getBudget(projectId, signal),
     `${projectId}:${dataVersion}`,
   );
 
-  if (state.status === 'loading') return <Skeleton label="Calculando presupuesto" rows={8} />;
+  if (state.status === 'loading') return <Skeleton label={t('budget.loading')} rows={8} />;
   if (state.status === 'error') {
     return (
       <div className="error-box card">
         <p>{state.error}</p>
         <button type="button" onClick={reload}>
-          Reintentar
+          {t('common.retry')}
         </button>
       </div>
     );
@@ -71,29 +74,26 @@ export function BudgetTab({ projectId, dataVersion, onSelect }: Props) {
   return (
     <div className="budget-tab">
       {budget.lines.length === 0 ? (
-        <p className="muted">
-          No hay ítems de presupuesto. Créalos en la pestaña Ítems y asígnalos a los elementos del
-          modelo.
-        </p>
+        <p className="muted">{t('budget.empty')}</p>
       ) : (
         <div className="table-scroll">
           <table className="data-table">
             <thead>
               <tr>
-                <th scope="col">Código</th>
-                <th scope="col">Descripción</th>
-                <th scope="col">Und</th>
+                <th scope="col">{t('common.code')}</th>
+                <th scope="col">{t('common.description')}</th>
+                <th scope="col">{t('common.unitShort')}</th>
                 <th scope="col" className="num">
-                  Elementos
+                  {t('common.elements')}
                 </th>
                 <th scope="col" className="num">
-                  Cantidad
+                  {t('budget.quantity')}
                 </th>
                 <th scope="col" className="num">
-                  Precio unitario
+                  {t('common.unitPrice')}
                 </th>
                 <th scope="col" className="num">
-                  Subtotal
+                  {t('budget.subtotal')}
                 </th>
               </tr>
             </thead>
@@ -108,14 +108,11 @@ export function BudgetTab({ projectId, dataVersion, onSelect }: Props) {
                 >
                   <td>{line.item.code}</td>
                   <td className="wrap">{line.item.description}</td>
-                  <td>{UNIT_LABELS[line.item.unit]}</td>
+                  <td>{unitLabel(line.item.unit)}</td>
                   <td className="num">
                     {formatNumber(line.elementCount)}
                     {line.withoutQuantity > 0 && (
-                      <abbr
-                        className="partial"
-                        title={`${line.withoutQuantity} elemento(s) sin la cantidad que necesita este ítem`}
-                      >
+                      <abbr className="partial" title={tp('budget.partial', line.withoutQuantity)}>
                         *
                       </abbr>
                     )}
@@ -129,7 +126,7 @@ export function BudgetTab({ projectId, dataVersion, onSelect }: Props) {
             <tfoot>
               <tr>
                 <th scope="row" colSpan={6}>
-                  Total presupuesto
+                  {t('budget.total')}
                 </th>
                 <td className="num">{formatCOP(budget.total)}</td>
               </tr>
@@ -140,14 +137,14 @@ export function BudgetTab({ projectId, dataVersion, onSelect }: Props) {
 
       <div className="left-out-grid">
         <LeftOutGroup
-          title="Elementos sin ítem asignado"
-          description="No suman al presupuesto hasta que se les asigne un ítem."
+          title={t('budget.unassigned')}
+          description={t('budget.unassignedNote')}
           group={budget.unassigned}
           onSelect={onSelect}
         />
         <LeftOutGroup
-          title="Elementos sin cantidad"
-          description="Tienen ítem, pero el IFC no trae la cantidad que el ítem necesita; no se inventan valores."
+          title={t('budget.withoutQuantity')}
+          description={t('budget.withoutQuantityNote')}
           group={budget.withoutQuantity}
           onSelect={onSelect}
         />

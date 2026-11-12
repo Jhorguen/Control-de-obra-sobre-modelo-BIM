@@ -3,7 +3,8 @@ import { useState, type FormEvent } from 'react';
 import { getElementHistory, recordProgress, setPlannedDate } from '../../api/progress';
 import { formatDate, formatIsoDate, formatNumber } from '../../format';
 import { errorMessage, useAsync } from '../../hooks/useAsync';
-import { STATUS_LABELS, todayIso } from '../../progressLabels';
+import { useI18n } from '../../i18n/useI18n';
+import { statusLabel, todayIso } from '../../progressLabels';
 import { toast } from '../../toast';
 import { STATUS_COLORS } from '../../viewer/BimViewer';
 
@@ -19,31 +20,34 @@ function StatusBadge({ status }: { status: ProgressStatus }) {
   return (
     <span className="status-badge">
       <span className="swatch" style={{ background: STATUS_COLORS[status] }} aria-hidden="true" />
-      {STATUS_LABELS[status]}
+      {statusLabel(status)}
     </span>
   );
 }
 
 function ElementHistory({ entry, dataVersion }: { entry: StatusMapEntry; dataVersion: number }) {
+  const { t } = useI18n();
   const { state } = useAsync(
     (signal) => getElementHistory(entry.id, signal),
     `${entry.id}:${dataVersion}`,
   );
   return (
     <div className="history">
-      <h2>Historial del elemento</h2>
+      <h2>{t('progress.history')}</h2>
       <p className="muted small">
         {/* Taken from the history itself (newest record first) so both always agree. */}
-        Estado actual:{' '}
+        {t('progress.current')}{' '}
         <StatusBadge
           status={state.status === 'success' ? (state.data[0]?.status ?? 'PENDING') : entry.status}
         />
-        {entry.plannedDate && <> · Programado para el {formatIsoDate(entry.plannedDate)}</>}
+        {entry.plannedDate && (
+          <> · {t('progress.plannedFor', { date: formatIsoDate(entry.plannedDate) })}</>
+        )}
       </p>
-      {state.status === 'loading' && <p className="muted small">Cargando historial…</p>}
+      {state.status === 'loading' && <p className="muted small">{t('progress.historyLoading')}</p>}
       {state.status === 'error' && <p className="error-text small">{state.error}</p>}
       {state.status === 'success' && state.data.length === 0 && (
-        <p className="muted small">Sin registros: el elemento está pendiente.</p>
+        <p className="muted small">{t('progress.noRecords')}</p>
       )}
       {state.status === 'success' && state.data.length > 0 && (
         <ol className="history-list">
@@ -52,7 +56,9 @@ function ElementHistory({ entry, dataVersion }: { entry: StatusMapEntry; dataVer
               <span className="history-date">{formatIsoDate(record.date)}</span>
               <StatusBadge status={record.status} />
               {record.note && <span className="history-note">{record.note}</span>}
-              <span className="muted small">registrado el {formatDate(record.createdAt)}</span>
+              <span className="muted small">
+                {t('progress.recordedOn', { date: formatDate(record.createdAt) })}
+              </span>
             </li>
           ))}
         </ol>
@@ -68,6 +74,7 @@ export function ProgressTab({
   statusMap,
   onDataChanged,
 }: Props) {
+  const { t, tp } = useI18n();
   const [status, setStatus] = useState<ProgressStatus>('DONE');
   const [date, setDate] = useState(todayIso);
   const [note, setNote] = useState('');
@@ -104,41 +111,44 @@ export function ProgressTab({
         note: note || undefined,
       });
       setNote('');
-      return `${formatNumber(affected)} elemento(s) marcados como "${STATUS_LABELS[status]}" el ${formatIsoDate(date)}.`;
+      return tp('progress.recorded', affected, {
+        count: formatNumber(affected),
+        status: statusLabel(status),
+        date: formatIsoDate(date),
+      });
     });
   }
 
   const plan = (value: string | null) =>
     run(async () => {
       const { affected } = await setPlannedDate(projectId, selectedGuids, value);
+      const count = formatNumber(affected);
       return value
-        ? `Fecha programada ${formatIsoDate(value)} asignada a ${formatNumber(affected)} elemento(s).`
-        : `Fecha programada quitada de ${formatNumber(affected)} elemento(s).`;
+        ? tp('progress.planned', affected, { count, date: formatIsoDate(value) })
+        : tp('progress.unplanned', affected, { count });
     });
 
   return (
     <div className="progress-tab">
       <div className="selection-summary">
         <strong>
-          {count === 0 ? 'Sin selección' : `${formatNumber(count)} elemento(s) seleccionado(s)`}
+          {count === 0
+            ? t('common.noSelection')
+            : tp('common.selected', count, { count: formatNumber(count) })}
         </strong>
         {breakdown.map(([s, n]) => (
           <span key={s} className="muted small">
             <StatusBadge status={s} /> {formatNumber(n)}
           </span>
         ))}
-        {count === 0 && (
-          <span className="muted small">
-            Selecciona elementos en el modelo o en las tablas (p. ej. una línea del presupuesto).
-          </span>
-        )}
+        {count === 0 && <span className="muted small">{t('progress.selectHint')}</span>}
       </div>
 
       <div className="progress-forms">
         <form className="item-form" onSubmit={handleRecord}>
-          <h2>Registrar avance</h2>
+          <h2>{t('progress.record')}</h2>
           <fieldset className="status-options">
-            <legend className="visually-hidden">Estado</legend>
+            <legend className="visually-hidden">{t('progress.status')}</legend>
             {progressStatusSchema.options.map((option) => (
               <label key={option} className={status === option ? 'checked' : ''}>
                 <input
@@ -154,7 +164,7 @@ export function ProgressTab({
           </fieldset>
           <div className="form-grid two">
             <label>
-              Fecha
+              {t('common.date')}
               <input
                 type="date"
                 value={date}
@@ -165,28 +175,26 @@ export function ProgressTab({
             </label>
             <label>
               <span>
-                Nota <span className="muted">(opcional)</span>
+                {t('progress.note')} <span className="muted">{t('common.optional')}</span>
               </span>
               <input
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 maxLength={500}
-                placeholder="Ej. Fundida segunda losa"
+                placeholder={t('progress.notePlaceholder')}
               />
             </label>
           </div>
           <button type="submit" className="primary" disabled={busy || count === 0}>
-            Registrar en {formatNumber(count)} elemento(s)
+            {tp('progress.submit', count, { count: formatNumber(count) })}
           </button>
         </form>
 
         <div className="item-form">
-          <h2>Programación</h2>
-          <p className="muted small">
-            La fecha programada alimenta la línea "programado" de la curva S del tablero.
-          </p>
+          <h2>{t('progress.schedule')}</h2>
+          <p className="muted small">{t('progress.scheduleNote')}</p>
           <label className="stacked-label">
-            Fecha programada
+            {t('progress.plannedDate')}
             <input
               type="date"
               value={plannedDate}
@@ -200,10 +208,10 @@ export function ProgressTab({
               onClick={() => void plan(plannedDate)}
               disabled={busy || count === 0 || !plannedDate}
             >
-              Asignar fecha
+              {t('progress.setDate')}
             </button>
             <button type="button" onClick={() => void plan(null)} disabled={busy || count === 0}>
-              Quitar fecha
+              {t('progress.clearDate')}
             </button>
           </div>
         </div>
@@ -212,9 +220,7 @@ export function ProgressTab({
       {first ? (
         <ElementHistory entry={first} dataVersion={dataVersion} />
       ) : (
-        count === 0 && (
-          <p className="muted small">Selecciona un elemento para ver su historial de avance.</p>
-        )
+        count === 0 && <p className="muted small">{t('progress.historyHint')}</p>
       )}
     </div>
   );

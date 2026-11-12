@@ -1,11 +1,10 @@
 import type { ProgressStatus, StatusMapEntry } from '@bim/shared';
+import { t } from './i18n/core';
 import type { StatusColorGroups } from './viewer/BimViewer';
 
-export const STATUS_LABELS: Record<ProgressStatus, string> = {
-  PENDING: 'Pendiente',
-  IN_PROGRESS: 'En proceso',
-  DONE: 'Ejecutado',
-};
+export function statusLabel(status: ProgressStatus): string {
+  return t(`status.${status}`);
+}
 
 export function groupGuidsByStatus(entries: readonly StatusMapEntry[]): StatusColorGroups {
   const groups: Record<ProgressStatus, string[]> = { PENDING: [], IN_PROGRESS: [], DONE: [] };

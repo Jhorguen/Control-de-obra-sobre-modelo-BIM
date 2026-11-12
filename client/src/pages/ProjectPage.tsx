@@ -18,11 +18,13 @@ import { toast } from '../toast';
 import { PropertiesPanel } from '../components/PropertiesPanel';
 import { formatBytes, formatNumber } from '../format';
 import { errorMessage, useAsync } from '../hooks/useAsync';
+import { tp } from '../i18n/core';
+import { useI18n } from '../i18n/useI18n';
 import { useModelSelection } from '../hooks/useModelSelection';
 import type { BimViewer } from '../viewer/BimViewer';
 import { extractFromIfc } from '../viewer/extractInBrowser';
 import { getStatusMap } from '../api/progress';
-import { groupGuidsByStatus, STATUS_LABELS } from '../progressLabels';
+import { groupGuidsByStatus, statusLabel } from '../progressLabels';
 import { useBimViewer } from '../viewer/useBimViewer';
 import { BudgetTab } from './project/BudgetTab';
 import { DashboardTab } from './project/DashboardTab';
@@ -79,12 +81,15 @@ function useStoredModel(viewer: BimViewer | null, project: Project) {
 }
 
 function importSummary(result: BulkElementsResult): string {
+  const count = (n: number) => ({ count: formatNumber(n) });
   const parts = [
-    `${formatNumber(result.received)} elementos leídos del IFC`,
-    `${formatNumber(result.created)} nuevos`,
-    `${formatNumber(result.updated)} actualizados`,
+    tp('project.import.received', result.received, count(result.received)),
+    tp('project.import.created', result.created, count(result.created)),
+    tp('project.import.updated', result.updated, count(result.updated)),
   ];
-  if (result.removed > 0) parts.push(`${formatNumber(result.removed)} marcados como eliminados`);
+  if (result.removed > 0) {
+    parts.push(tp('project.import.removed', result.removed, count(result.removed)));
+  }
   return parts.join(' · ');
 }
 
@@ -131,22 +136,25 @@ function OverlayCard({
 }
 
 function ModelStatusOverlay({ status }: { status: ModelStatus }) {
+  const { t } = useI18n();
   switch (status.kind) {
     case 'loading':
-      return <OverlayCard text="Cargando modelo…" working />;
+      return <OverlayCard text={t('project.overlay.loading')} working />;
     case 'converting':
       return (
         <OverlayCard
-          text={`Procesando el IFC en el navegador… ${formatNumber(Math.round(status.progress * 100))} %`}
+          text={t('project.overlay.converting', {
+            percent: formatNumber(Math.round(status.progress * 100)),
+          })}
           working
         />
       );
     case 'extracting':
-      return <OverlayCard text="Extrayendo elementos y cantidades…" working />;
+      return <OverlayCard text={t('project.overlay.extracting')} working />;
     case 'uploading':
-      return <OverlayCard text="Guardando el modelo en el servidor…" working />;
+      return <OverlayCard text={t('project.overlay.uploading')} working />;
     case 'empty':
-      return <OverlayCard text="Este proyecto aún no tiene modelo. Sube un archivo IFC." />;
+      return <OverlayCard text={t('project.overlay.empty')} />;
     case 'error':
       return <OverlayCard text={status.message} error />;
     case 'ready':
@@ -156,21 +164,16 @@ function ModelStatusOverlay({ status }: { status: ModelStatus }) {
 
 type Tab = 'quantities' | 'items' | 'budget' | 'progress' | 'dashboard';
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'quantities', label: 'Cantidades' },
-  { id: 'items', label: 'Ítems y asignación' },
-  { id: 'budget', label: 'Presupuesto' },
-  { id: 'progress', label: 'Avance' },
-  { id: 'dashboard', label: 'Tablero' },
-];
+const TABS: readonly Tab[] = ['quantities', 'items', 'budget', 'progress', 'dashboard'];
 
 function StatusLegend() {
+  const { t } = useI18n();
   return (
-    <ul className="viewer-legend glass" aria-label="Colores por estado">
+    <ul className="viewer-legend glass" aria-label={t('project.legend')}>
       {(['PENDING', 'IN_PROGRESS', 'DONE'] as const).map((s) => (
         <li key={s}>
           <span className={`swatch status-${s}`} aria-hidden="true" />
-          {STATUS_LABELS[s]}
+          {statusLabel(s)}
         </li>
       ))}
     </ul>
@@ -217,6 +220,7 @@ function ProjectView({
   onProjectChange: (p: Project) => void;
 }) {
   const { viewer, containerRef } = useBimViewer();
+  const { t } = useI18n();
   const { status, setStatus, markShown } = useStoredModel(viewer, project);
   const selection = useModelSelection(viewer);
   const [tab, setTab] = useState<Tab>('quantities');
@@ -237,13 +241,16 @@ function ProjectView({
   async function handleFile(file: File) {
     if (!viewer) return;
     if (!file.name.toLowerCase().endsWith('.ifc')) {
-      setStatus({ kind: 'error', message: 'Selecciona un archivo con extensión .ifc.' });
+      setStatus({ kind: 'error', message: t('project.error.extension') });
       return;
     }
     if (file.size > MAX_MODEL_FILE_BYTES) {
       setStatus({
         kind: 'error',
-        message: `El archivo pesa ${formatBytes(file.size)}; el máximo es ${formatBytes(MAX_MODEL_FILE_BYTES)}.`,
+        message: t('project.error.tooLarge', {
+          size: formatBytes(file.size),
+          max: formatBytes(MAX_MODEL_FILE_BYTES),
+        }),
       });
       return;
     }
@@ -295,7 +302,7 @@ function ProjectView({
         <div className="project-title">
           <Link href="/" className="back-link">
             <ArrowLeftIcon />
-            Proyectos
+            {t('projects.title')}
           </Link>
           <h1>
             {project.name}
@@ -315,7 +322,7 @@ function ProjectView({
             <ModelUpload
               onFile={(file) => void handleFile(file)}
               disabled={busy || !viewer}
-              label={project.files.frag ? 'Reemplazar IFC' : 'Subir IFC'}
+              label={project.files.frag ? t('project.replace') : t('project.upload')}
             />
           )}
         </div>
@@ -330,30 +337,34 @@ function ProjectView({
             <ModelStatusOverlay status={status} />
             {coloring.enabled && status.kind === 'ready' && <StatusLegend />}
             {status.kind === 'ready' && (
-              <div className="viewer-toolbar glass" role="toolbar" aria-label="Vista del modelo">
+              <div
+                className="viewer-toolbar glass"
+                role="toolbar"
+                aria-label={t('project.toolbar.label')}
+              >
                 <button
                   type="button"
                   aria-pressed={coloring.enabled}
                   onClick={() => coloring.setEnabled(!coloring.enabled)}
                 >
                   <LayersIcon />
-                  Colores de avance
+                  {t('project.toolbar.colors')}
                 </button>
                 <button type="button" onClick={() => void viewer?.fitToModel()}>
                   <FrameIcon />
-                  Encuadrar
+                  {t('project.toolbar.fit')}
                 </button>
                 {selection.guids.length > 0 && (
                   <button type="button" onClick={() => void viewer?.clearSelection()}>
                     <CloseIcon />
-                    Quitar selección
+                    {t('project.toolbar.clear')}
                   </button>
                 )}
               </div>
             )}
           </div>
           <aside className="side-panel card">
-            <h2>Propiedades</h2>
+            <h2>{t('project.properties')}</h2>
             <PropertiesPanel
               properties={selection.properties}
               selectedCount={selection.guids.length}
@@ -365,16 +376,16 @@ function ProjectView({
         <section className="card tabs-card">
           <div className="tabs-bar">
             <SegmentedTabs
-              tabs={TABS}
+              tabs={TABS.map((id) => ({ id, label: t(`project.tabs.${id}`) }))}
               value={tab}
               onChange={setTab}
-              label="Secciones del proyecto"
+              label={t('project.tabs.label')}
             />
             <div className="tabs-actions">
               {tab === 'quantities' && project.files.ifc && !project.isDemo && (
                 <button type="button" onClick={() => void reextract()} disabled={busy}>
                   <RefreshIcon />
-                  Volver a extraer cantidades
+                  {t('project.reextract')}
                 </button>
               )}
             </div>
@@ -424,17 +435,18 @@ function ProjectView({
 
 export function ProjectPage({ id }: { id: number }) {
   const { state, reload, setData } = useAsync((signal) => getProject(id, signal), String(id));
+  const { t } = useI18n();
 
-  if (state.status === 'loading') return <Loading text="Cargando proyecto…" />;
+  if (state.status === 'loading') return <Loading text={t('project.loading')} />;
   if (state.status === 'error') {
     return (
       <div className="card error-box">
         <p>{state.error}</p>
         <div className="row">
           <button type="button" onClick={reload}>
-            Reintentar
+            {t('common.retry')}
           </button>
-          <Link href="/">Volver a proyectos</Link>
+          <Link href="/">{t('app.backToProjects')}</Link>
         </div>
       </div>
     );

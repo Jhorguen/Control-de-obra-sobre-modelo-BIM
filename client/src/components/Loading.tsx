@@ -1,4 +1,5 @@
 import { useDelayedFlag } from '../hooks/useDelayedFlag';
+import { useI18n } from '../i18n/useI18n';
 
 /**
  * Loading message. The free hosting plan stops the API after ~15 minutes without traffic
@@ -7,17 +8,13 @@ import { useDelayedFlag } from '../hooks/useDelayedFlag';
  */
 export function Loading({ text }: { text: string }) {
   const slow = useDelayedFlag(5000);
+  const { t } = useI18n();
   return (
     <div className="loading" role="status">
       <span className="spinner" aria-hidden="true" />
       <div>
         <p>{text}</p>
-        {slow && (
-          <p className="muted small">
-            El servidor gratuito se apaga cuando no hay visitas y puede tardar hasta un minuto en
-            despertar. Gracias por la paciencia.
-          </p>
-        )}
+        {slow && <p className="muted small">{t('loading.slow')}</p>}
       </div>
     </div>
   );

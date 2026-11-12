@@ -7,6 +7,7 @@ import {
 } from '@bim/shared';
 import { z } from 'zod';
 import { apiRequest, apiUrl, ApiError, readApiError } from './http';
+import { t } from '../i18n/core';
 
 export function listProjects(signal?: AbortSignal): Promise<Project[]> {
   return apiRequest('/projects', projectListSchema, { signal });
@@ -56,7 +57,7 @@ export async function downloadModelFile(
     response = await fetch(apiUrl(`/projects/${projectId}/files/${kind}`), { signal });
   } catch (error) {
     if (signal?.aborted) throw error;
-    throw new ApiError(0, 'NETWORK_ERROR', 'No se pudo contactar el servidor.');
+    throw new ApiError(0, 'NETWORK_ERROR', t('errors.NETWORK_ERROR'));
   }
   if (!response.ok) throw await readApiError(response);
   return response.arrayBuffer();

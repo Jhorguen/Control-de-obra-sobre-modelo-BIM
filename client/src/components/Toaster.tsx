@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useI18n } from '../i18n/useI18n';
 import { dismissToast, subscribeToasts, type ToastItem } from '../toast';
 import { CheckIcon, CloseIcon } from './Icon';
 
@@ -10,6 +11,7 @@ function Toast({ item }: { item: ToastItem }) {
   const [leaving, setLeaving] = useState(false);
   const [paused, setPaused] = useState(false);
   const remaining = useRef(VISIBLE_MS);
+  const { t } = useI18n();
 
   useEffect(() => {
     if (paused || leaving) return;
@@ -44,7 +46,7 @@ function Toast({ item }: { item: ToastItem }) {
         type="button"
         className="toast-close"
         onClick={() => setLeaving(true)}
-        aria-label="Cerrar aviso"
+        aria-label={t('toast.close')}
       >
         <CloseIcon size={14} />
       </button>

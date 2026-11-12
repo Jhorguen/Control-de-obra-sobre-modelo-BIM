@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { fetchHealth } from '../api/health';
 import { errorMessage } from '../hooks/useAsync';
 import { useDelayedFlag } from '../hooks/useDelayedFlag';
+import { useI18n } from '../i18n/useI18n';
 
 type HealthState =
   | { kind: 'loading' }
@@ -37,18 +38,19 @@ function useHealth() {
 export function HealthStatus() {
   const { state, retry } = useHealth();
   const slow = useDelayedFlag(5000);
+  const { t } = useI18n();
 
   let tone: 'ok' | 'warn' | 'error' | 'pending' = 'pending';
   // A free-tier API that slept answers its first request after up to a minute.
-  let label = slow ? 'Despertando el servidor…' : 'Conectando con el servidor…';
+  let label = slow ? t('health.waking') : t('health.connecting');
   let detail = '';
   if (state.kind === 'success') {
     const dbUp = state.health.database === 'up';
     tone = dbUp ? 'ok' : 'warn';
-    label = dbUp ? 'Servidor conectado' : 'Base de datos sin conexión';
+    label = dbUp ? t('health.ok') : t('health.dbDown');
   } else if (state.kind === 'error') {
     tone = 'error';
-    label = 'Servidor sin conexión';
+    label = t('health.down');
     detail = state.message;
   }
 
@@ -57,11 +59,11 @@ export function HealthStatus() {
       type="button"
       className={`status-pill status-pill--${tone}`}
       onClick={retry}
-      title={detail || 'Clic para volver a consultar'}
+      title={detail || t('health.retryHint')}
       aria-live="polite"
     >
       <span className="status-dot" aria-hidden="true" />
-      {label}
+      <span className="status-label">{label}</span>
     </button>
   );
 }

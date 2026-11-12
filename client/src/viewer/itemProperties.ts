@@ -1,4 +1,6 @@
 import type { ItemAttribute, ItemData } from '@thatopen/fragments';
+import { formatNumber } from '../format';
+import { t } from '../i18n/core';
 
 // Turns the generic item graph returned by Fragments into what the properties panel shows.
 // Pure functions: no viewer needed, easy to test.
@@ -58,10 +60,8 @@ function related(item: ItemData, key: string): ItemData[] {
 }
 
 export function formatPropertyValue(value: unknown): string {
-  if (typeof value === 'boolean') return value ? 'Sí' : 'No';
-  if (typeof value === 'number') {
-    return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 3 }).format(value);
-  }
+  if (typeof value === 'boolean') return value ? t('common.yes') : t('common.no');
+  if (typeof value === 'number') return formatNumber(value);
   if (value === null || value === undefined || value === '') return '—';
   return String(value);
 }
@@ -79,7 +79,7 @@ function entryValue(entry: ItemData): unknown {
 
 function toGroup(definition: ItemData): PropertyGroup | null {
   const category = text(definition, '_category')?.toUpperCase();
-  const name = text(definition, 'Name') ?? 'Sin nombre';
+  const name = text(definition, 'Name') ?? t('common.unnamed');
   const standard = isStandardSetName(name);
   if (category === 'IFCPROPERTYSET') {
     return {

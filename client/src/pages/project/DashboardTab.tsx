@@ -19,9 +19,11 @@ import {
   formatIsoDate,
   formatNumber,
   formatPercent,
+  formatShortDate,
 } from '../../format';
 import { Skeleton } from '../../components/Skeleton';
 import { useAsync } from '../../hooks/useAsync';
+import { useI18n } from '../../i18n/useI18n';
 
 // Chart styling follows the data-viz rules used across the app: two categorical slots
 // validated for color-vision deficiency (blue, orange), thin marks, recessive grid and
@@ -41,9 +43,6 @@ const legendProps = {
   itemSorter: null,
   formatter: (value: string) => <span style={{ color: INK.text }}>{value}</span>,
 } as const;
-
-/** "1/09/2026" -> "1/09" on crowded axes; the tooltip shows the full date. */
-const shortDate = (iso: string) => formatIsoDate(iso).replace(/\/\d{4}$/, '');
 
 function ChartTooltip({
   active,
@@ -101,14 +100,15 @@ function Kpi({
 }
 
 function LevelChart({ summary }: { summary: ProgressSummary }) {
+  const { t } = useI18n();
   const data = summary.byLevel.map((level) => ({
-    level: level.level ?? 'Sin nivel',
+    level: level.level ?? t('common.noLevel'),
     physical: level.physicalProgress,
     financial: level.financialProgress,
   }));
   return (
     <figure className="chart">
-      <figcaption>Avance por nivel</figcaption>
+      <figcaption>{t('dash.byLevel')}</figcaption>
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={data} barGap={2} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke={INK.grid} />
@@ -128,7 +128,7 @@ function LevelChart({ summary }: { summary: ProgressSummary }) {
           <Legend iconType="square" {...legendProps} />
           <Bar
             dataKey="physical"
-            name="Físico (elementos)"
+            name={t('dash.physicalSeries')}
             fill={SERIES.first}
             radius={[4, 4, 0, 0]}
             isAnimationActive={false}
@@ -136,7 +136,7 @@ function LevelChart({ summary }: { summary: ProgressSummary }) {
           />
           <Bar
             dataKey="financial"
-            name="Financiero (valor)"
+            name={t('dash.financialSeries')}
             fill={SERIES.second}
             radius={[4, 4, 0, 0]}
             isAnimationActive={false}
@@ -145,32 +145,32 @@ function LevelChart({ summary }: { summary: ProgressSummary }) {
         </BarChart>
       </ResponsiveContainer>
       <details>
-        <summary>Ver datos</summary>
+        <summary>{t('dash.showData')}</summary>
         <table className="data-table">
           <thead>
             <tr>
-              <th scope="col">Nivel</th>
+              <th scope="col">{t('common.level')}</th>
               <th scope="col" className="num">
-                Ejecutados
+                {t('dash.doneCount')}
               </th>
               <th scope="col" className="num">
-                Físico
+                {t('dash.physicalShort')}
               </th>
               <th scope="col" className="num">
-                Presupuesto
+                {t('dash.budget')}
               </th>
               <th scope="col" className="num">
-                Ejecutado
+                {t('dash.executed')}
               </th>
               <th scope="col" className="num">
-                Financiero
+                {t('dash.financialShort')}
               </th>
             </tr>
           </thead>
           <tbody>
             {summary.byLevel.map((level) => (
               <tr key={level.level ?? '—'}>
-                <td>{level.level ?? 'Sin nivel'}</td>
+                <td>{level.level ?? t('common.noLevel')}</td>
                 <td className="num">
                   {formatNumber(level.done)} / {formatNumber(level.elements)}
                 </td>
@@ -188,23 +188,22 @@ function LevelChart({ summary }: { summary: ProgressSummary }) {
 }
 
 function SCurve({ summary }: { summary: ProgressSummary }) {
+  const { t } = useI18n();
   if (summary.curve.length === 0) {
     return (
       <figure className="chart">
-        <figcaption>Curva S de avance acumulado</figcaption>
-        <p className="muted">
-          Aún no hay fechas: registra avance o asigna fechas programadas en la pestaña Avance.
-        </p>
+        <figcaption>{t('dash.curve')}</figcaption>
+        <p className="muted">{t('dash.noDates')}</p>
       </figure>
     );
   }
   return (
     <figure className="chart">
-      <figcaption>Curva S de avance acumulado (valor en COP)</figcaption>
+      <figcaption>{t('dash.curveCop')}</figcaption>
       <ResponsiveContainer width="100%" height={260}>
         <LineChart data={summary.curve} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke={INK.grid} />
-          <XAxis dataKey="date" {...axisProps} tickFormatter={shortDate} minTickGap={24} />
+          <XAxis dataKey="date" {...axisProps} tickFormatter={formatShortDate} minTickGap={24} />
           <YAxis
             {...axisProps}
             axisLine={false}
@@ -222,7 +221,7 @@ function SCurve({ summary }: { summary: ProgressSummary }) {
             <Line
               type="linear"
               dataKey="planned"
-              name="Programado"
+              name={t('dash.planned')}
               stroke={SERIES.first}
               strokeWidth={2}
               isAnimationActive={false}
@@ -234,7 +233,7 @@ function SCurve({ summary }: { summary: ProgressSummary }) {
           <Line
             type="linear"
             dataKey="executed"
-            name="Ejecutado"
+            name={t('dash.executed')}
             stroke={SERIES.second}
             strokeWidth={2}
             isAnimationActive={false}
@@ -243,22 +242,18 @@ function SCurve({ summary }: { summary: ProgressSummary }) {
           />
         </LineChart>
       </ResponsiveContainer>
-      {!summary.hasPlan && (
-        <p className="muted small">
-          Asigna fechas programadas a los elementos para ver la línea de lo programado.
-        </p>
-      )}
+      {!summary.hasPlan && <p className="muted small">{t('dash.noPlan')}</p>}
       <details>
-        <summary>Ver datos</summary>
+        <summary>{t('dash.showData')}</summary>
         <table className="data-table">
           <thead>
             <tr>
-              <th scope="col">Fecha</th>
+              <th scope="col">{t('common.date')}</th>
               <th scope="col" className="num">
-                Programado acumulado
+                {t('dash.plannedCumulative')}
               </th>
               <th scope="col" className="num">
-                Ejecutado acumulado
+                {t('dash.executedCumulative')}
               </th>
             </tr>
           </thead>
@@ -278,62 +273,60 @@ function SCurve({ summary }: { summary: ProgressSummary }) {
 }
 
 export function DashboardTab({ projectId, dataVersion }: Props) {
+  const { t } = useI18n();
   const { state, reload } = useAsync(
     (signal) => getProgressSummary(projectId, signal),
     `${projectId}:${dataVersion}`,
   );
 
-  if (state.status === 'loading') return <Skeleton label="Calculando avance" rows={6} />;
+  if (state.status === 'loading') return <Skeleton label={t('dash.loading')} rows={6} />;
   if (state.status === 'error') {
     return (
       <div className="error-box card">
         <p>{state.error}</p>
         <button type="button" onClick={reload}>
-          Reintentar
+          {t('common.retry')}
         </button>
       </div>
     );
   }
   const summary = state.data;
   if (summary.counts.withItem === 0) {
-    return (
-      <p className="muted">
-        El tablero mide el avance de los elementos con ítem de presupuesto. Asigna ítems en la
-        pestaña Ítems y asignación para empezar.
-      </p>
-    );
+    return <p className="muted">{t('dash.noItems')}</p>;
   }
 
   return (
     <div className="dashboard">
       <div className="kpi-grid">
         <Kpi
-          label="Avance físico"
+          label={t('dash.physical')}
           value={formatPercent(summary.physicalProgress)}
           meter={{ ratio: summary.physicalProgress, color: SERIES.first }}
-          detail={`${formatNumber(summary.counts.done)} de ${formatNumber(summary.counts.withItem)} elementos ejecutados`}
+          detail={t('dash.physicalDetail', {
+            done: formatNumber(summary.counts.done),
+            total: formatNumber(summary.counts.withItem),
+          })}
         />
         <Kpi
-          label="Avance financiero"
+          label={t('dash.financial')}
           value={formatPercent(summary.financialProgress)}
           meter={{ ratio: summary.financialProgress, color: SERIES.second }}
-          detail={`${formatCOP(summary.executedValue)} ejecutados`}
+          detail={t('dash.financialDetail', { value: formatCOP(summary.executedValue) })}
         />
         <Kpi
-          label="Presupuesto"
+          label={t('dash.budget')}
           value={formatCOP(summary.budgetTotal)}
-          detail={`${formatCOP(summary.budgetTotal - summary.executedValue)} por ejecutar`}
+          detail={t('dash.budgetDetail', {
+            value: formatCOP(summary.budgetTotal - summary.executedValue),
+          })}
         />
         <Kpi
-          label="En proceso"
+          label={t('dash.inProgress')}
           value={formatNumber(summary.counts.inProgress)}
-          detail="elementos (no suman al valor ejecutado hasta terminarse)"
+          detail={t('dash.inProgressDetail')}
         />
       </div>
-      <p className="muted small">
-        Físico = elementos ejecutados / elementos con ítem. Financiero = valor ejecutado /
-        presupuesto. Si difieren, se está avanzando más en lo barato o en lo caro.
-      </p>
+      <p className="muted small">{t('dash.explain')}</p>
       <div className="chart-grid">
         <LevelChart summary={summary} />
         <SCurve summary={summary} />

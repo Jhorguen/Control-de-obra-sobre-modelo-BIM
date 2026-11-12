@@ -3,12 +3,14 @@ import { useState, type FormEvent } from 'react';
 import { createProject, deleteProject, listProjects } from '../api/projects';
 import { errorMessage, useAsync } from '../hooks/useAsync';
 import { formatBytes, formatDate, formatNumber } from '../format';
+import { useI18n } from '../i18n/useI18n';
 import { ArrowRightIcon, BrandMark, TrashIcon } from '../components/Icon';
 import { Link } from '../components/Link';
 import { Loading } from '../components/Loading';
 import { navigate } from '../router';
 
 function CreateProjectForm() {
+  const { t } = useI18n();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
@@ -29,20 +31,20 @@ function CreateProjectForm() {
 
   return (
     <form className="card form form-card" onSubmit={handleSubmit}>
-      <h2>Nuevo proyecto</h2>
+      <h2>{t('projects.new')}</h2>
       <label>
-        Nombre
+        {t('projects.name')}
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Ej. Edificio Torre Norte"
+          placeholder={t('projects.namePlaceholder')}
           maxLength={120}
           required
         />
       </label>
       <label>
         <span>
-          Descripción <span className="muted">(opcional)</span>
+          {t('common.description')} <span className="muted">{t('common.optional')}</span>
         </span>
         <textarea
           value={description}
@@ -53,17 +55,18 @@ function CreateProjectForm() {
       </label>
       {error && <p className="error-text">{error}</p>}
       <button type="submit" className="primary" disabled={saving || !name.trim()}>
-        {saving ? 'Creando…' : 'Crear proyecto'}
+        {saving ? t('projects.creating') : t('projects.create')}
       </button>
     </form>
   );
 }
 
 function ProjectCard({ project, onDeleted }: { project: Project; onDeleted: () => void }) {
+  const { t } = useI18n();
   const [deleting, setDeleting] = useState(false);
 
   async function handleDelete() {
-    if (!window.confirm(`¿Eliminar el proyecto "${project.name}" y todos sus datos?`)) return;
+    if (!window.confirm(t('projects.deleteConfirm', { name: project.name }))) return;
     setDeleting(true);
     try {
       await deleteProject(project.id);
@@ -89,9 +92,9 @@ function ProjectCard({ project, onDeleted }: { project: Project; onDeleted: () =
         {project.description && <p className="muted">{project.description}</p>}
         <ul className="project-facts">
           <li className="chip">
-            {ifc ? `${ifc.fileName} · ${formatBytes(ifc.sizeBytes)}` : 'Sin modelo'}
+            {ifc ? `${ifc.fileName} · ${formatBytes(ifc.sizeBytes)}` : t('projects.noModel')}
           </li>
-          <li className="chip">Creado {formatDate(project.createdAt)}</li>
+          <li className="chip">{t('projects.created', { date: formatDate(project.createdAt) })}</li>
         </ul>
       </div>
       <div className="row-actions">
@@ -101,8 +104,8 @@ function ProjectCard({ project, onDeleted }: { project: Project; onDeleted: () =
             className="danger icon-only"
             onClick={handleDelete}
             disabled={deleting}
-            aria-label={`Eliminar el proyecto ${project.name}`}
-            title="Eliminar proyecto"
+            aria-label={t('projects.deleteLabel', { name: project.name })}
+            title={t('projects.deleteTitle')}
           >
             <TrashIcon />
           </button>
@@ -115,6 +118,7 @@ function ProjectCard({ project, onDeleted }: { project: Project; onDeleted: () =
 
 export function ProjectsPage() {
   const { state, reload } = useAsync(listProjects, 'projects');
+  const { t } = useI18n();
   const count = state.status === 'success' ? state.data.length : null;
 
   return (
@@ -122,19 +126,17 @@ export function ProjectsPage() {
       <section aria-labelledby="projects-title">
         <div className="page-head">
           <div className="row">
-            <h1 id="projects-title">Proyectos</h1>
+            <h1 id="projects-title">{t('projects.title')}</h1>
             {count !== null && count > 0 && <span className="count">{formatNumber(count)}</span>}
           </div>
-          <p>
-            Cada proyecto une su modelo IFC con las cantidades, el presupuesto y el avance de obra.
-          </p>
+          <p>{t('projects.intro')}</p>
         </div>
-        {state.status === 'loading' && <Loading text="Cargando proyectos…" />}
+        {state.status === 'loading' && <Loading text={t('projects.loading')} />}
         {state.status === 'error' && (
           <div className="card error-box">
             <p>{state.error}</p>
             <button type="button" onClick={reload}>
-              Reintentar
+              {t('common.retry')}
             </button>
           </div>
         )}
@@ -143,10 +145,7 @@ export function ProjectsPage() {
             <span className="project-tile" aria-hidden="true">
               <BrandMark size={24} />
             </span>
-            <p>
-              Aún no hay proyectos. Crea uno con el formulario y sube su modelo IFC para obtener
-              cantidades, presupuesto y avance.
-            </p>
+            <p>{t('projects.empty')}</p>
           </div>
         )}
         {state.status === 'success' && state.data.length > 0 && (
