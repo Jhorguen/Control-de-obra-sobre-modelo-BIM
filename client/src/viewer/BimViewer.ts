@@ -33,6 +33,13 @@ const STATUSES: ProgressStatus[] = ['PENDING', 'IN_PROGRESS', 'DONE'];
  */
 const MIN_FRAME_SHARE = 0.6;
 
+/**
+ * Share of a ghosted (x-rayed) surface's pixels that are still drawn. Fragments' default
+ * (0.28) blends a roof in front of a selected wall into a muddy color on 1x screens;
+ * lighter ghosts keep the selection blue and still show the building's outline.
+ */
+const GHOST_OPACITY = 0.1;
+
 type World = OBC.SimpleWorld<OBC.SimpleScene, OBC.OrthoPerspectiveCamera, OBC.SimpleRenderer>;
 
 /**
@@ -61,6 +68,7 @@ export class BimViewer {
 
     this.fragments = this.components.get(OBC.FragmentsManager);
     this.fragments.init(fragmentsWorkerUrl);
+    this.fragments.core.setGhostOpacity(GHOST_OPACITY);
 
     // Fragments streams geometry by level of detail: it must know when the camera moves.
     this.world.camera.controls.addEventListener('update', () => void this.fragments.core.update());

@@ -2099,4 +2099,9 @@ select:focus-visible {
   .workbench .table-scroll:not(details .table-scroll) {
     overflow-x: auto;
   }
+
+  /* That box is now the header row's scroll container: the app-bar offset no longer applies */
+  .workbench .data-table thead th {
+    top: 0;
+  }
 }
