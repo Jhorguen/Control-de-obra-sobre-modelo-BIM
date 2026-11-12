@@ -1,74 +1,75 @@
-# Control de obra sobre modelo BIM
+# BIM Construction Control
 
-En obra, el presupuesto vive en Excel, las cantidades se sacan de planos y el avance se reporta en actas que nadie cruza con el modelo. Esta aplicación junta las tres cosas sobre el **modelo BIM (IFC)**: extrae las cantidades del modelo, las valora con ítems de presupuesto (precio unitario de APU) y registra el avance elemento por elemento, con el modelo 3D coloreado según lo ejecutado y un tablero de avance físico y financiero.
+On a construction site the budget lives in Excel, quantities are taken off drawings and progress is reported in sheets that nobody checks against the model. This application brings the three together on the **BIM model (IFC)**: it takes quantities off the model, prices them with budget items (unit prices from a unit price analysis, in Colombian pesos) and tracks progress element by element, with the 3D model colored by what has been built and a dashboard of physical and financial progress.
 
-**Demo:** [control-de-obra-sobre-modelo-bim.vercel.app](https://control-de-obra-sobre-modelo-bim.vercel.app). Incluye un proyecto de demostración listo para explorar, y puedes crear proyectos con tus propios modelos o con los [modelos IFC de prueba](#modelos-ifc-para-probar). La API corre en el plan gratuito de Render: si llevaba un rato sin uso, la primera carga tarda cerca de un minuto. Cómo desplegar tu propia copia: [docs/DEPLOY.md](docs/DEPLOY.md).
+**Live demo:** [control-de-obra-sobre-modelo-bim.vercel.app](https://control-de-obra-sobre-modelo-bim.vercel.app). It includes a demo project ready to explore, and you can create projects with your own models or with the [sample IFC models](#sample-ifc-models). The interface is available in Spanish and English (**ES | EN** switch in the top bar). The API runs on Render's free plan: after a while without visits, the first load takes about a minute. To deploy your own copy, see [docs/DEPLOY.md](docs/DEPLOY.md).
 
-![Flujo completo: visor, cantidades, presupuesto, avance y tablero](docs/images/flujo.gif)
+![Full workflow: viewer, quantities, budget, progress and dashboard](docs/images/workflow.gif)
 
-## Qué hace
+## Features
 
-- **Visor IFC en el navegador:** órbita, zoom, encuadre y clic en un elemento para ver clase, tipo, nivel, GlobalId, property sets y cantidades.
-- **Cantidades de obra** agrupadas por clase IFC, tipo y nivel, con subtotales. Clic en una fila → el modelo encuadra esos elementos y deja el resto en rayos X, así se ven aunque estén ocultos (vigas bajo la cubierta, losas de entrepiso); y clic en el modelo → se ven sus propiedades.
-- **Presupuesto:** ítems con código, unidad, fuente de la cantidad, factor y precio unitario en COP. Un elemento puede llevar varios ítems (concreto m³ + acero kg + formaleta m²). Los elementos sin ítem o sin cantidad se listan aparte.
-- **Avance de obra:** estado (pendiente, en proceso, ejecutado), fecha y nota por elemento, con historial completo y fechas programadas.
-- **Tablero:** avance físico y financiero, avance por nivel y curva S programado vs. ejecutado.
+- **IFC viewer in the browser:** orbit, zoom, fit view, and click an element to see its class, type, level, GlobalId, property sets and quantities.
+- **Workbench layout:** on wide screens the viewer stays pinned next to the tables, so every click on a row shows its result in the model without scrolling.
+- **Quantity takeoff** grouped by IFC class, type and level, with subtotals. Click a row and the model frames those elements and x-rays the rest, so they show even when hidden (beams under the roof, floor slabs); click the model and its properties appear.
+- **Budget:** items with code, unit, quantity source, factor and unit price in COP. One element can carry several items (concrete m³ + rebar kg + formwork m²). Elements without an item or without a quantity are listed separately.
+- **Site progress:** status (pending, in progress, done), date and note per element, with full history and planned dates.
+- **Dashboard:** physical and financial progress, progress by level, and an S-curve of planned vs. executed value.
 
-## Modelos IFC para probar
+## Sample IFC models
 
-En el demo, crea un proyecto nuevo y usa **Subir IFC** (hasta 25 MB). Estos modelos de licencia abierta sirven para probar; también están en [`samples/`](samples/).
+In the demo, create a new project and use **Upload IFC** (up to 25 MB). These open-license models are good for testing; they are also in [`samples/`](samples/).
 
-| Modelo                                                                                                           | Qué es                                                                                                  | Tamaño  |
-| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------- |
-| [AC20-Institute-Var-2.ifc](https://control-de-obra-sobre-modelo-bim.vercel.app/samples/AC20-Institute-Var-2.ifc) | Edificio de oficinas de 5 niveles: 121 muros, 206 ventanas, 77 puertas y 26 losas, con cantidades base. | 10,4 MB |
-| [Building-Structural.ifc](https://control-de-obra-sobre-modelo-bim.vercel.app/samples/Building-Structural.ifc)   | Estructura pequeña en IFC4: vigas, muros y una zapata. Carga en segundos.                               | 181 KB  |
-| [AC20-FZK-Haus.ifc](https://control-de-obra-sobre-modelo-bim.vercel.app/samples/AC20-FZK-Haus.ifc)               | La casa del proyecto demo, para recorrer el flujo completo desde cero.                                  | 2,5 MB  |
+| Model                                                                                                            | What it is                                                                                        | Size    |
+| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------- |
+| [AC20-Institute-Var-2.ifc](https://control-de-obra-sobre-modelo-bim.vercel.app/samples/AC20-Institute-Var-2.ifc) | Five-storey office building: 121 walls, 206 windows, 77 doors and 26 slabs, with base quantities. | 10.4 MB |
+| [Building-Structural.ifc](https://control-de-obra-sobre-modelo-bim.vercel.app/samples/Building-Structural.ifc)   | Small IFC4 structure: beams, walls and a footing. Loads in seconds.                               | 181 KB  |
+| [AC20-FZK-Haus.ifc](https://control-de-obra-sobre-modelo-bim.vercel.app/samples/AC20-FZK-Haus.ifc)               | The demo project's house, to walk through the whole workflow from scratch.                        | 2.5 MB  |
 
-## Capturas
+## Screenshots
 
-| Visor y propiedades                                                                            | Cantidades                                                                          |
-| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| ![Visor con un tipo de muro seleccionado y sus propiedades](docs/images/visor-propiedades.png) | ![Tabla de cantidades por clase, tipo y nivel](docs/images/cantidades.png)          |
-| **Presupuesto**                                                                                | **Modelo coloreado por avance**                                                     |
-| ![Tabla de presupuesto con subtotales en COP](docs/images/presupuesto.png)                     | ![Modelo en gris, amarillo y verde según el estado](docs/images/avance-colores.png) |
+| Viewer, properties and quantities                                                                                                                  | Items and assignment                                                                                     |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| ![Interior walls selected from the quantities table and shown through the x-rayed model, with their properties](docs/images/viewer-quantities.png) | ![Selected elements ready to receive a budget item, and the item form](docs/images/items.png)            |
+| **Budget**                                                                                                                                         | **Model colored by progress**                                                                            |
+| ![Budget in COP with a line selected and its walls highlighted](docs/images/budget.png)                                                            | ![Model in gray, yellow and green by status, next to the progress form](docs/images/progress-colors.png) |
 
-![Tablero de avance físico y financiero con curva S](docs/images/tablero.png)
+![Physical and financial progress dashboard next to the colored model](docs/images/dashboard.png)
 
-## Arquitectura
+## Architecture
 
 ```mermaid
 flowchart LR
-  subgraph Navegador["Navegador (React + Vite)"]
-    UI[Pantallas y tablas]
-    V["Visor<br/>That Open Components + Three.js"]
-    X["Extracción de cantidades<br/>web-ifc (WebAssembly)"]
+  subgraph Browser["Browser (React + Vite)"]
+    UI[Screens and tables]
+    V["Viewer<br/>That Open Components + Three.js"]
+    X["Quantity extraction<br/>web-ifc (WebAssembly)"]
   end
-  subgraph API["API REST (Node.js + Express)"]
-    R[Rutas + validación Zod]
-    S["Servicios<br/>cantidades · presupuesto · avance"]
+  subgraph API["REST API (Node.js + Express)"]
+    R[Routes + Zod validation]
+    S["Services<br/>quantities · budget · progress"]
   end
   DB[("PostgreSQL<br/>Prisma")]
-  IFC[/Archivo IFC/] --> V & X
-  X -- "elementos + cantidades (JSON)" --> R
-  V -- "IFC y .frag (binario)" --> R
+  IFC[/IFC file/] --> V & X
+  X -- "elements + quantities (JSON)" --> R
+  V -- "IFC and .frag (binary)" --> R
   UI <--> R
   R --> S --> DB
 ```
 
-1. El usuario sube un IFC. **El navegador lo procesa**: That Open lo convierte al formato Fragments para el visor y web-ifc extrae elementos y cantidades.
-2. El navegador envía la lista de elementos (`POST /elements/bulk`) y guarda el IFC y el `.frag` en el servidor.
-3. Presupuesto, avance y tablero trabajan contra PostgreSQL. El **GlobalId** une cada registro con su elemento del modelo 3D.
+1. The user uploads an IFC. **The browser processes it**: That Open converts it to the Fragments format for the viewer, and web-ifc extracts the elements and their quantities.
+2. The browser sends the element list (`POST /elements/bulk`) and stores the IFC and the `.frag` on the server.
+3. Budget, progress and dashboard work against PostgreSQL. The **GlobalId** links every record to its element in the 3D model.
 
-## Modelo de datos
+## Data model
 
 ```mermaid
 erDiagram
-  Project ||--o{ ModelFile : "IFC y .frag"
-  Project ||--o{ Element : tiene
-  Project ||--o{ BudgetItem : tiene
+  Project ||--o{ ModelFile : "IFC and .frag"
+  Project ||--o{ Element : has
+  Project ||--o{ BudgetItem : has
   Element ||--o{ ElementBudgetItem : ""
   BudgetItem ||--o{ ElementBudgetItem : ""
-  Element ||--o{ ProgressRecord : historial
+  Element ||--o{ ProgressRecord : history
 
   Project { int id string name boolean isDemo }
   ModelFile { int id enum kind bytea data }
@@ -78,62 +79,64 @@ erDiagram
   ProgressRecord { int id enum status date date string note }
 ```
 
-## Decisiones técnicas
+## Design decisions
 
-- **GlobalId como vínculo.** Es el identificador estable que el IFC asigna a cada elemento y se conserva entre versiones del modelo. Al reimportar se hace upsert por GlobalId: no se duplican elementos, se conservan sus ítems y su historial, y los que desaparecen se marcan como eliminados en vez de borrarse.
-- **El IFC se procesa en el navegador.** web-ifc corre como WebAssembly en el cliente, así que el servidor (capa gratuita, poca CPU y memoria) solo recibe JSON y binarios. El mismo código de extracción ([`shared/src/extraction`](shared/src/extraction)) se ejecuta en Node para los tests y el seed.
-- **Los modelos se guardan en PostgreSQL (`bytea`).** El disco de los hostings gratuitos es efímero. El visor recarga el `.frag` (más rápido que reprocesar el IFC) y la descarga usa ETag: si el modelo no cambió, la respuesta es `304` sin leer los bytes.
-- **Cantidades sin inventar.** Se buscan en los `IfcElementQuantity` por nombre de cantidad, priorizando los conjuntos estándar (`Qto_*` en IFC4, `BaseQuantities` en IFC2x3) y los valores netos sobre los brutos. Las unidades se convierten a SI desde `IfcUnitAssignment` (un modelo en milímetros no termina con volúmenes en mm³). Si el IFC no trae la cantidad, queda `null` y se muestra como "sin cantidad".
-- **Sin doble conteo.** Solo se toman elementos físicos con geometría propia: lo que se ve y se selecciona en el visor. Así no se suman a la vez un muro cortina y sus paneles, ni se cuentan aberturas o espacios.
-- **Presupuesto.** Cantidad del ítem = Σ (cantidad base del elemento × factor), redondeada a dos decimales y multiplicada por el precio unitario con `Decimal` (el dinero nunca se calcula con `float`). El factor cubre casos reales: acero = volumen × 80 kg/m³, formaleta = área × 2 caras.
-- **Cómo se calculan los avances.**
-  - **Físico** = elementos ejecutados / elementos con ítem asignado.
-  - **Financiero** = valor ejecutado / presupuesto total. Solo cuenta lo `Ejecutado`, como en un acta de obra; "en proceso" no suma valor.
-  - El estado actual de un elemento es su último registro por fecha (y por hora de registro si hay varios el mismo día).
-  - La **curva S** recalcula, para cada fecha, el estado que tenía cada elemento ese día, con la misma aritmética del presupuesto. Por eso su último punto coincide con el tablero y con la tabla de presupuesto.
-- **Contrato compartido.** Los esquemas Zod de [`shared/`](shared/src) validan las peticiones en el servidor y las respuestas en el cliente, y los mensajes de error salen en español.
-- **Pocas dependencias.** Router de dos pantallas sobre la History API, CORS propio de pocas líneas y subida de archivos como cuerpo binario: sin `react-router`, `cors` ni `multer`.
+- **GlobalId as the link.** It is the stable identifier the IFC gives every element, kept across model versions. Re-importing upserts by GlobalId: elements are not duplicated, their items and history are kept, and elements that disappear are marked as removed instead of deleted.
+- **The IFC is processed in the browser.** web-ifc runs as WebAssembly on the client, so the server (free tier, little CPU and memory) only receives JSON and binaries. The same extraction code ([`shared/src/extraction`](shared/src/extraction)) runs in Node for the tests and the seed.
+- **Models are stored in PostgreSQL (`bytea`).** Free hosting disks are ephemeral. The viewer reloads the `.frag` (faster than reprocessing the IFC) and the download uses an ETag: if the model has not changed, the answer is a `304` without reading the bytes.
+- **No made-up quantities.** They are read from `IfcElementQuantity` by quantity name, preferring the standard sets (`Qto_*` in IFC4, `BaseQuantities` in IFC2x3) and net over gross values. Units are converted to SI from `IfcUnitAssignment` (a model in millimetres does not end up with volumes in mm³). If the IFC lacks a quantity, it stays `null` and is shown as "no quantity".
+- **No double counting.** Only physical elements with their own geometry are taken: what you see and select in the viewer. A curtain wall and its panels are not summed together, and openings or spaces are not counted.
+- **Budget.** Item quantity = Σ (element base quantity × factor), rounded to two decimals and multiplied by the unit price with `Decimal` (money is never computed with `float`). The factor covers real cases: rebar = volume × 80 kg/m³, formwork = area × 2 faces.
+- **How progress is measured.**
+  - **Physical** = elements done / elements with an assigned item.
+  - **Financial** = executed value / total budget. Only `Done` counts, as in a progress payment certificate; "in progress" adds no value.
+  - The current status of an element is its latest record by date (and by recording time when there are several on the same day).
+  - The **S-curve** recomputes, for every date, the status each element had that day, with the same arithmetic as the budget. That is why its last point matches the dashboard and the budget table.
+- **Two languages without a library.** Spanish and English dictionaries share the same keys (TypeScript and a test check it) and are read through a small store with `useSyncExternalStore`. Numbers and dates follow the language (es-CO or en-US); money stays in Colombian pesos. API errors carry a code that the client translates.
+- **Shared contract.** The Zod schemas in [`shared/`](shared/src) validate requests on the server and responses on the client.
+- **Few dependencies.** A two-screen router on the History API, a few-line CORS middleware and file uploads as a binary body: no `react-router`, `cors`, `multer` or i18n library.
 
-## Cómo correrlo en local
+## Running it locally
 
-Requisitos: Node.js 24+ y Docker.
+Requirements: Node.js 24+ and Docker.
 
 ```bash
 docker compose up -d              # PostgreSQL
-npm install && npm run setup      # dependencias, .env, migraciones y proyecto demo
-npm run dev                       # API en :3000 y frontend en http://localhost:5173
+npm install && npm run setup      # dependencies, .env, migrations and demo project
+npm run dev                       # API on :3000 and frontend on http://localhost:5173
 ```
 
-| Comando                              | Qué hace                                                   |
-| ------------------------------------ | ---------------------------------------------------------- |
-| `npm test`                           | Tests de `shared`, `server` y `client` (Vitest, Supertest) |
-| `npm run lint` / `npm run typecheck` | ESLint y TypeScript en todo el monorepo                    |
-| `npm run build`                      | Compila los tres paquetes                                  |
-| `npm run db:seed -w @bim/server`     | Restablece el proyecto demo                                |
+| Command                              | What it does                                                  |
+| ------------------------------------ | ------------------------------------------------------------- |
+| `npm test`                           | Tests for `shared`, `server` and `client` (Vitest, Supertest) |
+| `npm run lint` / `npm run typecheck` | ESLint and TypeScript across the monorepo                     |
+| `npm run build`                      | Builds the three packages                                     |
+| `npm run db:seed -w @bim/server`     | Resets the demo project                                       |
 
-**Tests (87):** extracción contra dos IFC reales, cuyos valores se verificaron leyendo directamente el texto STEP; conversión de unidades; agrupación de cantidades; cálculo del presupuesto y del avance (funciones puras); y la API contra una base de datos de pruebas. El CI de GitHub Actions corre formato, lint, tipos, tests y build en cada push.
+**Tests (95):** extraction against two real IFC files, whose values were checked by reading the STEP text directly; unit conversion; quantity grouping; budget and progress calculations (pure functions); the API against a test database; and the translation dictionaries. GitHub Actions runs formatting, lint, types, tests and build on every push.
 
-## Estructura
+## Project structure
 
 ```
-client/   React + Vite: páginas, tablas, tablero y visor (src/viewer)
-server/   API Express: rutas, servicios (lógica de negocio), Prisma y seed
-shared/   Esquemas Zod (contrato de la API) y extracción de IFC con web-ifc
-samples/  Modelo IFC de ejemplo
-docs/     Despliegue e imágenes
+client/   React + Vite: pages, tables, dashboard, viewer (src/viewer) and translations (src/i18n)
+server/   Express API: routes, services (business logic), Prisma and seed
+shared/   Zod schemas (the API contract) and IFC extraction with web-ifc
+samples/  Sample IFC models
+docs/     Deployment guide and images
 ```
 
-## Limitaciones conocidas y próximos pasos
+## Known limitations and next steps
 
-- Las cantidades dependen de que el IFC las traiga (opción "Exportar cantidades base" en Revit o ArchiCAD). Calcularlas desde la geometría cuando faltan es el siguiente paso natural.
-- Un modelo por proyecto; no hay federación de disciplinas (arquitectura + estructura).
-- El avance se registra por elemento completo. No hay avance parcial (por ejemplo, 50 % de una losa).
-- Sin autenticación ni roles (residente / director de obra). El proyecto demo está protegido contra borrado y reemplazo del modelo, pero sus ítems y avances se pueden editar; `npm run db:seed` lo restablece.
-- El plan gratuito del hosting apaga la API tras unos minutos sin uso: la primera visita tarda hasta un minuto y la interfaz lo avisa.
-- Próximos pasos: desglose del APU por insumos, exportar presupuesto y cantidades a Excel/CSV, y avance parcial.
+- Quantities depend on the IFC including them ("Export base quantities" in Revit or ArchiCAD). Computing them from geometry when they are missing is the natural next step.
+- One model per project; no federation of disciplines (architecture + structure).
+- Progress is recorded per whole element. There is no partial progress (e.g. 50% of a slab).
+- No authentication or roles (site engineer / project manager). The demo project is protected against deletion and model replacement, but its items and progress can be edited; `npm run db:seed` resets it.
+- The demo data (project name, budget items) is in Spanish, as a Colombian project would be.
+- The free hosting plan stops the API after some minutes without use: the first visit takes up to a minute and the interface says so.
+- Next steps: breakdown of unit prices by inputs, exporting budget and quantities to Excel/CSV, and partial progress.
 
-## Créditos
+## Credits
 
-- **Modelos de ejemplo:** _AC20-FZK-Haus.ifc_ y _AC20-Institute-Var-2.ifc_, Institute for Automation and Applied Informatics (IAI) / Karlsruhe Institute of Technology (KIT), de uso libre ([fuente](https://www.ifcwiki.org/index.php?title=KIT_IFC_Examples)).
-- **Modelo de ejemplo y fixture de tests:** _Building-Structural.ifc_ y _Building-Architecture.ifc_, © buildingSMART International Ltd., [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) ([fuente](https://github.com/buildingSMART/Sample-Test-Files)).
-- Visor construido con [That Open Components](https://github.com/ThatOpen/engine_components) y [web-ifc](https://github.com/ThatOpen/engine_web-ifc).
+- **Sample models:** _AC20-FZK-Haus.ifc_ and _AC20-Institute-Var-2.ifc_, Institute for Automation and Applied Informatics (IAI) / Karlsruhe Institute of Technology (KIT), for unrestricted use ([source](https://www.ifcwiki.org/index.php?title=KIT_IFC_Examples)).
+- **Sample model and test fixture:** _Building-Structural.ifc_ and _Building-Architecture.ifc_, © buildingSMART International Ltd., [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) ([source](https://github.com/buildingSMART/Sample-Test-Files)).
+- Viewer built with [That Open Components](https://github.com/ThatOpen/engine_components) and [web-ifc](https://github.com/ThatOpen/engine_web-ifc).
