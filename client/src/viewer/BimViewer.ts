@@ -6,7 +6,7 @@ import type { FragmentsModel, ItemData } from '@thatopen/fragments';
 import fragmentsWorkerUrl from '@thatopen/fragments/worker?url';
 import * as THREE from 'three';
 
-/** Folder where scripts/copy-wasm.mjs places web-ifc.wasm (see client/public/wasm). */
+/** Folder where scripts/copy-assets.mjs places web-ifc.wasm (see client/public/wasm). */
 const WEB_IFC_WASM_PATH = '/wasm/';
 /** The app shows one model per project, always registered under this id. */
 const MODEL_ID = 'model';

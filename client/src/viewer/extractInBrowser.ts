@@ -9,7 +9,7 @@ let apiPromise: Promise<IfcAPI> | null = null;
 function getIfcApi(): Promise<IfcAPI> {
   apiPromise ??= (async () => {
     const api = new IfcAPI();
-    api.SetWasmPath('/wasm/', true); // served from client/public/wasm (scripts/copy-wasm.mjs)
+    api.SetWasmPath('/wasm/', true); // served from client/public/wasm (scripts/copy-assets.mjs)
     await api.Init();
     return api;
   })();

@@ -2,7 +2,7 @@
 
 En obra, el presupuesto vive en Excel, las cantidades se sacan de planos y el avance se reporta en actas que nadie cruza con el modelo. Esta aplicación junta las tres cosas sobre el **modelo BIM (IFC)**: extrae las cantidades del modelo, las valora con ítems de presupuesto (precio unitario de APU) y registra el avance elemento por elemento, con el modelo 3D coloreado según lo ejecutado y un tablero de avance físico y financiero.
 
-**Demo:** [control-de-obra-sobre-modelo-bim.vercel.app](https://control-de-obra-sobre-modelo-bim.vercel.app). Incluye un proyecto de demostración listo para explorar. La API corre en el plan gratuito de Render: si llevaba un rato sin uso, la primera carga tarda cerca de un minuto. Cómo desplegar tu propia copia: [docs/DEPLOY.md](docs/DEPLOY.md).
+**Demo:** [control-de-obra-sobre-modelo-bim.vercel.app](https://control-de-obra-sobre-modelo-bim.vercel.app). Incluye un proyecto de demostración listo para explorar, y puedes crear proyectos con tus propios modelos o con los [modelos IFC de prueba](#modelos-ifc-para-probar). La API corre en el plan gratuito de Render: si llevaba un rato sin uso, la primera carga tarda cerca de un minuto. Cómo desplegar tu propia copia: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ![Flujo completo: visor, cantidades, presupuesto, avance y tablero](docs/images/flujo.gif)
 
@@ -13,6 +13,16 @@ En obra, el presupuesto vive en Excel, las cantidades se sacan de planos y el av
 - **Presupuesto:** ítems con código, unidad, fuente de la cantidad, factor y precio unitario en COP. Un elemento puede llevar varios ítems (concreto m³ + acero kg + formaleta m²). Los elementos sin ítem o sin cantidad se listan aparte.
 - **Avance de obra:** estado (pendiente, en proceso, ejecutado), fecha y nota por elemento, con historial completo y fechas programadas.
 - **Tablero:** avance físico y financiero, avance por nivel y curva S programado vs. ejecutado.
+
+## Modelos IFC para probar
+
+En el demo, crea un proyecto nuevo y usa **Subir IFC** (hasta 25 MB). Estos modelos de licencia abierta sirven para probar; también están en [`samples/`](samples/).
+
+| Modelo                                                                                                           | Qué es                                                                                                  | Tamaño  |
+| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------- |
+| [AC20-Institute-Var-2.ifc](https://control-de-obra-sobre-modelo-bim.vercel.app/samples/AC20-Institute-Var-2.ifc) | Edificio de oficinas de 5 niveles: 121 muros, 206 ventanas, 77 puertas y 26 losas, con cantidades base. | 10,4 MB |
+| [Building-Structural.ifc](https://control-de-obra-sobre-modelo-bim.vercel.app/samples/Building-Structural.ifc)   | Estructura pequeña en IFC4: vigas, muros y una zapata. Carga en segundos.                               | 181 KB  |
+| [AC20-FZK-Haus.ifc](https://control-de-obra-sobre-modelo-bim.vercel.app/samples/AC20-FZK-Haus.ifc)               | La casa del proyecto demo, para recorrer el flujo completo desde cero.                                  | 2,5 MB  |
 
 ## Capturas
 
@@ -124,6 +134,6 @@ docs/     Despliegue e imágenes
 
 ## Créditos
 
-- **Modelo de ejemplo:** _AC20-FZK-Haus.ifc_, Institute for Automation and Applied Informatics (IAI) / Karlsruhe Institute of Technology (KIT), de uso libre ([fuente](https://www.ifcwiki.org/index.php?title=KIT_IFC_Examples)).
-- **Fixture de tests:** _Building-Architecture.ifc_, © buildingSMART International Ltd., [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) ([fuente](https://github.com/buildingSMART/Sample-Test-Files)).
+- **Modelos de ejemplo:** _AC20-FZK-Haus.ifc_ y _AC20-Institute-Var-2.ifc_, Institute for Automation and Applied Informatics (IAI) / Karlsruhe Institute of Technology (KIT), de uso libre ([fuente](https://www.ifcwiki.org/index.php?title=KIT_IFC_Examples)).
+- **Modelo de ejemplo y fixture de tests:** _Building-Structural.ifc_ y _Building-Architecture.ifc_, © buildingSMART International Ltd., [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) ([fuente](https://github.com/buildingSMART/Sample-Test-Files)).
 - Visor construido con [That Open Components](https://github.com/ThatOpen/engine_components) y [web-ifc](https://github.com/ThatOpen/engine_web-ifc).
