@@ -2,7 +2,14 @@ import { MAX_MODEL_FILE_BYTES, type BulkElementsResult, type Project } from '@bi
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { uploadElements } from '../api/elements';
 import { downloadModelFile, getProject, uploadModelFile } from '../api/projects';
-import { ArrowLeftIcon, FrameIcon, LayersIcon, RefreshIcon, UploadIcon } from '../components/Icon';
+import {
+  ArrowLeftIcon,
+  CloseIcon,
+  FrameIcon,
+  LayersIcon,
+  RefreshIcon,
+  UploadIcon,
+} from '../components/Icon';
 import { Link } from '../components/Link';
 import { Loading } from '../components/Loading';
 import { ProgressRibbon } from '../components/ProgressRibbon';
@@ -335,6 +342,12 @@ function ProjectView({
                 <FrameIcon />
                 Encuadrar
               </button>
+              {selection.guids.length > 0 && (
+                <button type="button" onClick={() => void viewer?.clearSelection()}>
+                  <CloseIcon />
+                  Quitar selección
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -26,6 +26,13 @@ export const STATUS_COLORS: Record<ProgressStatus, string> = {
 const statusStyle = (status: ProgressStatus) => `status-${status}`;
 const STATUSES: ProgressStatus[] = ['PENDING', 'IN_PROGRESS', 'DONE'];
 
+/**
+ * Framing a selection never zooms in closer than this share of the whole model.
+ * Framing a small element alone puts the camera inside the building: a beam under
+ * the roof leaves the camera against the roof and the view filled with it.
+ */
+const MIN_FRAME_SHARE = 0.6;
+
 type World = OBC.SimpleWorld<OBC.SimpleScene, OBC.OrthoPerspectiveCamera, OBC.SimpleRenderer>;
 
 /**
@@ -86,10 +93,16 @@ export class BimViewer {
     // `events` is keyed by style name; setup() creates the "select" style.
     const selectEvents = this.highlighter.events[this.highlighter.config.selectName];
     if (!selectEvents) throw new Error('Highlighter select events are not initialized');
+    // Any new selection or clear ends the x-ray view of selectByGuids; selectByGuids
+    // turns it back on right after its own highlight.
     selectEvents.onHighlight.add((modelIdMap) => {
+      this.model?.clearGhost();
       this.selectionListener?.([...(modelIdMap[MODEL_ID] ?? [])]);
     });
-    selectEvents.onClear.add(() => this.selectionListener?.([]));
+    selectEvents.onClear.add(() => {
+      this.model?.clearGhost();
+      this.selectionListener?.([]);
+    });
 
     for (const status of STATUSES) {
       this.highlighter.styles.set(statusStyle(status), {
@@ -162,23 +175,44 @@ export class BimViewer {
     return guids.filter((guid): guid is string => guid !== null);
   }
 
-  /** Selects (and optionally frames) the elements with these GlobalIds, e.g. from a table row. */
+  /**
+   * Selects the elements with these GlobalIds, e.g. from a table row, and x-rays the
+   * rest of the model so they show even behind other elements (beams under the roof,
+   * footings under the floor slab). Optionally frames them.
+   */
   async selectByGuids(guids: string[], zoom = true): Promise<void> {
     const model = this.model;
     if (!model) return;
     if (guids.length === 0) {
-      await this.highlighter.clear(this.highlighter.config.selectName);
+      await this.clearSelection();
       return;
     }
-    const localIds = (await model.getLocalIdsByGuids(guids)).filter(
-      (id): id is number => id !== null,
-    );
+    const localIds = await this.localIdsOf(guids);
     await this.highlighter.highlightByID(
       this.highlighter.config.selectName,
       { [MODEL_ID]: new Set(localIds) },
       true,
-      zoom,
+      false,
     );
+    if (localIds.length === 0) return;
+    await model.setGhostItems(localIds, true);
+    if (zoom) await this.frame(model, localIds);
+    await this.fragments.core.update(true);
+  }
+
+  /** Clears the selection and, with it, the x-ray view. */
+  async clearSelection(): Promise<void> {
+    await this.highlighter.clear(this.highlighter.config.selectName);
+    this.model?.clearGhost();
+    await this.fragments.core.update(true);
+  }
+
+  /** Points the camera at the elements from the current angle, keeping a minimum distance. */
+  private async frame(model: FragmentsModel, localIds: number[]): Promise<void> {
+    const target = (await model.getMergedBox(localIds)).getBoundingSphere(new THREE.Sphere());
+    const whole = model.box.getBoundingSphere(new THREE.Sphere());
+    target.radius = Math.max(target.radius, whole.radius * MIN_FRAME_SHARE);
+    await this.world.camera.controls.fitToSphere(target, true);
   }
 
   private async localIdsOf(guids: readonly string[]): Promise<number[]> {

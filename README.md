@@ -9,7 +9,7 @@ En obra, el presupuesto vive en Excel, las cantidades se sacan de planos y el av
 ## Qué hace
 
 - **Visor IFC en el navegador:** órbita, zoom, encuadre y clic en un elemento para ver clase, tipo, nivel, GlobalId, property sets y cantidades.
-- **Cantidades de obra** agrupadas por clase IFC, tipo y nivel, con subtotales. Clic en una fila → se resaltan esos elementos en el modelo, y viceversa.
+- **Cantidades de obra** agrupadas por clase IFC, tipo y nivel, con subtotales. Clic en una fila → el modelo encuadra esos elementos y deja el resto en rayos X, así se ven aunque estén ocultos (vigas bajo la cubierta, losas de entrepiso); y clic en el modelo → se ven sus propiedades.
 - **Presupuesto:** ítems con código, unidad, fuente de la cantidad, factor y precio unitario en COP. Un elemento puede llevar varios ítems (concreto m³ + acero kg + formaleta m²). Los elementos sin ítem o sin cantidad se listan aparte.
 - **Avance de obra:** estado (pendiente, en proceso, ejecutado), fecha y nota por elemento, con historial completo y fechas programadas.
 - **Tablero:** avance físico y financiero, avance por nivel y curva S programado vs. ejecutado.
